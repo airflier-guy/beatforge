@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeatForge — Online Beat Maker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <div class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">BeatForge</span>
+      </div>
+      <div class="nav-links">
+        <a href="#hero">Home</a>
+        <a href="#sequencer">Studio</a>
+        <a href="#about">About</a>
+      </div>
+      <button class="nav-cta" onclick="document.getElementById('sequencer').scrollIntoView({behavior:'smooth'})">
+        Open Studio
+      </button>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section id="hero" class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">Free · No signup · Instant</div>
+      <h1 class="hero-title">Make Beats.<br>Right Now.</h1>
+      <p class="hero-sub">BeatForge is a browser-based beat sequencer. Build drum patterns, experiment with rhythms and save your creations — no installation needed.</p>
+      <div class="hero-actions">
+        <button class="btn-primary" onclick="document.getElementById('sequencer').scrollIntoView({behavior:'smooth'})">
+          Start Creating →
+        </button>
+        <span class="hero-hint">5 tracks · 16 steps · Instant playback</span>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="visual-grid">
+        <div class="vg-row">
+          <div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell"></div><div class="vg-cell active"></div>
+          <div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell"></div>
+        </div>
+        <div class="vg-row">
+          <div class="vg-cell"></div><div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell"></div>
+          <div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell"></div>
+        </div>
+        <div class="vg-row">
+          <div class="vg-cell active"></div><div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell active"></div>
+          <div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell active"></div>
+        </div>
+        <div class="vg-row">
+          <div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell"></div>
+          <div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell active"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES STRIP -->
+  <section class="features">
+    <div class="feature-item">
+      <span class="feat-icon">🥁</span>
+      <span class="feat-text">5 Instrument Tracks</span>
+    </div>
+    <div class="feat-divider"></div>
+    <div class="feature-item">
+      <span class="feat-icon">⚡</span>
+      <span class="feat-text">Real-time Playback</span>
+    </div>
+    <div class="feat-divider"></div>
+    <div class="feature-item">
+      <span class="feat-icon">💾</span>
+      <span class="feat-text">Save Your Patterns</span>
+    </div>
+    <div class="feat-divider"></div>
+    <div class="feature-item">
+      <span class="feat-icon">🎚️</span>
+      <span class="feat-text">BPM Control</span>
+    </div>
+    <div class="feat-divider"></div>
+    <div class="feature-item">
+      <span class="feat-icon">🌐</span>
+      <span class="feat-text">Works in Browser</span>
+    </div>
+  </section>
+
+  <!-- SEQUENCER SECTION -->
+  <section id="sequencer" class="sequencer-section">
+    <div class="section-header">
+      <h2>The Studio</h2>
+      <p>Click the grid to activate steps. Hit Play to hear your beat.</p>
+    </div>
+
+    <div class="sequencer-card">
+      <!-- Transport Controls -->
+      <div class="transport">
+        <div class="transport-left">
+          <button class="transport-btn play" id="playBtn">
+            <span class="btn-icon">▶</span> Play
+          </button>
+          <button class="transport-btn stop" id="stopBtn">
+            <span class="btn-icon">⏹</span> Stop
+          </button>
+        </div>
+        <div class="transport-center">
+          <div class="bpm-control">
+            <label>BPM</label>
+            <button class="bpm-adj" id="bpmDown">−</button>
+            <input type="number" id="bpm" value="120" min="40" max="240">
+            <button class="bpm-adj" id="bpmUp">+</button>
+          </div>
+        </div>
+        <div class="transport-right">
+          <button class="transport-btn save" id="saveBtn">
+            <span class="btn-icon">💾</span> Save
+          </button>
+          <button class="transport-btn clear" id="clearBtn">
+            <span class="btn-icon">✕</span> Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- Step Numbers -->
+      <div class="step-numbers">
+        <div class="track-label-spacer"></div>
+        <div class="step-nums">
+          <span>1</span><span>2</span><span>3</span><span>4</span>
+          <span class="beat-sep">5</span><span>6</span><span>7</span><span>8</span>
+          <span class="beat-sep">9</span><span>10</span><span>11</span><span>12</span>
+          <span class="beat-sep">13</span><span>14</span><span>15</span><span>16</span>
+        </div>
+      </div>
+
+      <!-- Grid -->
+      <div id="grid"></div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <div class="status-left">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Ready</span>
+        </div>
+        <div class="status-right" id="savedInfo"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT SECTION -->
+  <section id="about" class="about-section">
+    <div class="about-inner">
+      <div class="about-text">
+        <h2>What is BeatForge?</h2>
+        <p>BeatForge is a free, browser-based beat sequencer built for anyone who loves music. Whether you're a producer, a hobbyist, or just curious — you can jump in and start making beats instantly.</p>
+        <p>No downloads. No accounts. Just open the studio and create.</p>
+      </div>
+      <div class="about-stats">
+        <div class="stat">
+          <div class="stat-num">5</div>
+          <div class="stat-label">Tracks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">16</div>
+          <div class="stat-label">Steps</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">∞</div>
+          <div class="stat-label">Patterns</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <span class="logo-icon">⬡</span> BeatForge
+      </div>
+      <p class="footer-tagline">Make beats. Right now.</p>
+      <p class="footer-copy">© 2026 BeatForge. Free to use.</p>
+    </div>
+  </footer>
+
+  <script src="sequencer.js"></script>
+</body>
+</html>
