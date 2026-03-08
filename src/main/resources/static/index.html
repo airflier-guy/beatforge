@@ -20,6 +20,7 @@
       <div class="nav-links">
         <a href="#hero">Home</a>
         <a href="#sequencer">Studio</a>
+        <a href="#library">Library</a>
         <a href="#about">About</a>
       </div>
       <button class="nav-cta" onclick="document.getElementById('sequencer').scrollIntoView({behavior:'smooth'})">
@@ -28,86 +29,78 @@
     </div>
   </nav>
 
-  <!-- HERO SECTION -->
+  <!-- HERO -->
   <section id="hero" class="hero">
     <div class="hero-content">
-      <div class="hero-badge">Free · No signup · Instant</div>
+      <div class="hero-badge">Free · No signup · Indian + Western beats</div>
       <h1 class="hero-title">Make Beats.<br>Right Now.</h1>
-      <p class="hero-sub">BeatForge is a browser-based beat sequencer. Build drum patterns, experiment with rhythms and save your creations — no installation needed.</p>
+      <p class="hero-sub">BeatForge is a browser-based beat sequencer with Western and Indian instruments. Build patterns, save them, download as WAV, and share with friends.</p>
       <div class="hero-actions">
         <button class="btn-primary" onclick="document.getElementById('sequencer').scrollIntoView({behavior:'smooth'})">
           Start Creating →
         </button>
-        <span class="hero-hint">5 tracks · 16 steps · Instant playback</span>
+        <span class="hero-hint">9 tracks · 16 steps · WAV download</span>
       </div>
     </div>
     <div class="hero-visual">
       <div class="visual-grid">
         <div class="vg-row">
-          <div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell"></div><div class="vg-cell active"></div>
-          <div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell"></div>
+          <div class="vg-cell active" style="background:#e8521a"></div><div class="vg-cell"></div><div class="vg-cell"></div><div class="vg-cell active" style="background:#e8521a"></div>
+          <div class="vg-cell"></div><div class="vg-cell active" style="background:#e8521a"></div><div class="vg-cell"></div><div class="vg-cell"></div>
         </div>
         <div class="vg-row">
-          <div class="vg-cell"></div><div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell"></div>
-          <div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell"></div>
+          <div class="vg-cell"></div><div class="vg-cell"></div><div class="vg-cell active" style="background:#f97316"></div><div class="vg-cell"></div>
+          <div class="vg-cell active" style="background:#f97316"></div><div class="vg-cell"></div><div class="vg-cell active" style="background:#f97316"></div><div class="vg-cell"></div>
         </div>
         <div class="vg-row">
-          <div class="vg-cell active"></div><div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell active"></div>
-          <div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell active"></div>
+          <div class="vg-cell active" style="background:#a855f7"></div><div class="vg-cell active" style="background:#a855f7"></div><div class="vg-cell"></div><div class="vg-cell active" style="background:#a855f7"></div>
+          <div class="vg-cell active" style="background:#a855f7"></div><div class="vg-cell"></div><div class="vg-cell active" style="background:#a855f7"></div><div class="vg-cell active" style="background:#a855f7"></div>
         </div>
         <div class="vg-row">
-          <div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell"></div>
-          <div class="vg-cell"></div><div class="vg-cell active"></div><div class="vg-cell"></div><div class="vg-cell active"></div>
+          <div class="vg-cell"></div><div class="vg-cell active" style="background:#14b8a6"></div><div class="vg-cell"></div><div class="vg-cell"></div>
+          <div class="vg-cell"></div><div class="vg-cell active" style="background:#14b8a6"></div><div class="vg-cell"></div><div class="vg-cell active" style="background:#14b8a6"></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- FEATURES STRIP -->
+  <!-- FEATURES -->
   <section class="features">
-    <div class="feature-item">
-      <span class="feat-icon">🥁</span>
-      <span class="feat-text">5 Instrument Tracks</span>
-    </div>
+    <div class="feature-item"><span class="feat-icon">🥁</span><span>9 Tracks</span></div>
     <div class="feat-divider"></div>
-    <div class="feature-item">
-      <span class="feat-icon">⚡</span>
-      <span class="feat-text">Real-time Playback</span>
-    </div>
+    <div class="feature-item"><span class="feat-icon">🪘</span><span>Indian Beats</span></div>
     <div class="feat-divider"></div>
-    <div class="feature-item">
-      <span class="feat-icon">💾</span>
-      <span class="feat-text">Save Your Patterns</span>
-    </div>
+    <div class="feature-item"><span class="feat-icon">⬇️</span><span>WAV Download</span></div>
     <div class="feat-divider"></div>
-    <div class="feature-item">
-      <span class="feat-icon">🎚️</span>
-      <span class="feat-text">BPM Control</span>
-    </div>
+    <div class="feature-item"><span class="feat-icon">💾</span><span>Save Patterns</span></div>
     <div class="feat-divider"></div>
-    <div class="feature-item">
-      <span class="feat-icon">🌐</span>
-      <span class="feat-text">Works in Browser</span>
-    </div>
+    <div class="feature-item"><span class="feat-icon">🔗</span><span>Share Beats</span></div>
+    <div class="feat-divider"></div>
+    <div class="feature-item"><span class="feat-icon">🎚️</span><span>BPM Control</span></div>
   </section>
 
-  <!-- SEQUENCER SECTION -->
+  <!-- STUDIO -->
   <section id="sequencer" class="sequencer-section">
     <div class="section-header">
       <h2>The Studio</h2>
-      <p>Click the grid to activate steps. Hit Play to hear your beat.</p>
+      <p>Click grid steps to activate them. Use presets to get started quickly.</p>
     </div>
 
     <div class="sequencer-card">
-      <!-- Transport Controls -->
+
+      <!-- Presets -->
+      <div class="presets-bar">
+        <span class="presets-label">Presets:</span>
+        <button class="preset-btn" onclick="loadPreset('Basic Beat')">🥁 Basic Beat</button>
+        <button class="preset-btn" onclick="loadPreset('Tabla Groove')">🪘 Tabla Groove</button>
+        <button class="preset-btn" onclick="loadPreset('Fusion Mix')">🎵 Fusion Mix</button>
+      </div>
+
+      <!-- Transport -->
       <div class="transport">
         <div class="transport-left">
-          <button class="transport-btn play" id="playBtn">
-            <span class="btn-icon">▶</span> Play
-          </button>
-          <button class="transport-btn stop" id="stopBtn">
-            <span class="btn-icon">⏹</span> Stop
-          </button>
+          <button class="transport-btn play" id="playBtn">▶ Play</button>
+          <button class="transport-btn stop" id="stopBtn">⏹ Stop</button>
         </div>
         <div class="transport-center">
           <div class="bpm-control">
@@ -118,12 +111,8 @@
           </div>
         </div>
         <div class="transport-right">
-          <button class="transport-btn save" id="saveBtn">
-            <span class="btn-icon">💾</span> Save
-          </button>
-          <button class="transport-btn clear" id="clearBtn">
-            <span class="btn-icon">✕</span> Clear
-          </button>
+          <button class="transport-btn download" id="downloadBtn">⬇️ WAV</button>
+          <button class="transport-btn clear" id="clearBtn">✕ Clear</button>
         </div>
       </div>
 
@@ -141,38 +130,43 @@
       <!-- Grid -->
       <div id="grid"></div>
 
-      <!-- Status Bar -->
+      <!-- Save Bar -->
+      <div class="save-bar">
+        <input type="text" id="patternName" placeholder="Pattern name (e.g. My Tabla Beat)" class="pattern-name-input">
+        <button class="transport-btn save" id="saveBtn">💾 Save Pattern</button>
+      </div>
+
+      <!-- Status -->
       <div class="status-bar">
         <div class="status-left">
           <span class="status-dot" id="statusDot"></span>
           <span id="statusText">Ready</span>
         </div>
-        <div class="status-right" id="savedInfo"></div>
       </div>
     </div>
   </section>
 
-  <!-- ABOUT SECTION -->
+  <!-- PATTERN LIBRARY -->
+  <section id="library" class="library-section">
+    <div class="section-header">
+      <h2>Your Pattern Library</h2>
+      <p>All your saved beats in one place. Load, share or delete them.</p>
+    </div>
+    <div id="patternList" class="pattern-list"></div>
+  </section>
+
+  <!-- ABOUT -->
   <section id="about" class="about-section">
     <div class="about-inner">
       <div class="about-text">
         <h2>What is BeatForge?</h2>
-        <p>BeatForge is a free, browser-based beat sequencer built for anyone who loves music. Whether you're a producer, a hobbyist, or just curious — you can jump in and start making beats instantly.</p>
-        <p>No downloads. No accounts. Just open the studio and create.</p>
+        <p>BeatForge is a free, browser-based beat sequencer with both Western and Indian instruments. Make beats with Tabla, Dhol, Sitar, Dholak alongside Kick, Snare and more.</p>
+        <p>Download your beats as WAV files, save multiple patterns, and share them with friends via a link — all for free, no signup needed.</p>
       </div>
       <div class="about-stats">
-        <div class="stat">
-          <div class="stat-num">5</div>
-          <div class="stat-label">Tracks</div>
-        </div>
-        <div class="stat">
-          <div class="stat-num">16</div>
-          <div class="stat-label">Steps</div>
-        </div>
-        <div class="stat">
-          <div class="stat-num">∞</div>
-          <div class="stat-label">Patterns</div>
-        </div>
+        <div class="stat"><div class="stat-num">9</div><div class="stat-label">Tracks</div></div>
+        <div class="stat"><div class="stat-num">16</div><div class="stat-label">Steps</div></div>
+        <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Patterns</div></div>
       </div>
     </div>
   </section>
@@ -180,11 +174,9 @@
   <!-- FOOTER -->
   <footer class="footer">
     <div class="footer-inner">
-      <div class="footer-logo">
-        <span class="logo-icon">⬡</span> BeatForge
-      </div>
+      <div class="footer-logo"><span class="logo-icon">⬡</span> BeatForge</div>
       <p class="footer-tagline">Make beats. Right now.</p>
-      <p class="footer-copy">© 2026 BeatForge. Free to use.</p>
+      <p class="footer-copy">© 2026 BeatForge. Free to use forever.</p>
     </div>
   </footer>
 
