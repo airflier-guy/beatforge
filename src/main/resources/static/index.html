@@ -26,117 +26,247 @@
   <!-- HERO -->
   <section id="hero" class="hero">
     <div class="hero-content">
-      <div class="hero-badge">Eastern · Western · 8 Genres · Realistic Sounds</div>
-      <h1 class="hero-title">One Studio.<br>Two Worlds.</h1>
-      <p class="hero-sub">BeatForge combines Eastern and Western instruments with genre presets, realistic synthesis, WAV download and pattern sharing — all in your browser.</p>
+      <div class="hero-badge">Eastern · Western · 8 Genres · Moods · Realistic Sounds</div>
+      <h1 class="hero-title">Your Mood.<br>Your Genre.<br>Your Beat.</h1>
+      <p class="hero-sub">Pick how you feel, choose your genre, and BeatForge builds a beat that matches both — with 21 realistic instruments from across the world.</p>
       <div class="hero-actions">
-        <button class="btn-primary" onclick="document.getElementById('genre').scrollIntoView({behavior:'smooth'})">Pick a Genre →</button>
-        <span class="hero-hint">17 instruments · 8 genres · Free forever</span>
+        <button class="btn-primary" onclick="document.getElementById('genre').scrollIntoView({behavior:'smooth'})">Start Creating →</button>
+        <span class="hero-hint">21 instruments · 8 genres · Mood variations · Free</span>
       </div>
     </div>
     <div class="hero-visual">
       <div class="world-pills">
         <div class="world-pill west">
           <div class="wp-label">🎸 Western</div>
-          <div class="wp-instruments">Kick · Snare · Guitar · Piano · Trumpet · Strings</div>
+          <div class="wp-instruments">Rock · Jazz · Hip-Hop · EDM</div>
+          <div class="wp-moods">😡 😌 🤩 😊</div>
         </div>
-        <div class="world-divider">vs</div>
+        <div class="world-divider">+</div>
         <div class="world-pill east">
           <div class="wp-label">🪘 Eastern</div>
-          <div class="wp-instruments">Tabla · Sitar · Bansuri · Sarangi · Tanpura</div>
+          <div class="wp-instruments">Bollywood · Hindustani · Carnatic · Sufi</div>
+          <div class="wp-moods">🎉 🪔 😌 🌙</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- FEATURES STRIP -->
+  <!-- FEATURES -->
   <section class="features">
-    <div class="feature-item"><span class="feat-icon">🎸</span><span>9 Western Tracks</span></div>
-    <div class="feat-divider"></div>
-    <div class="feature-item"><span class="feat-icon">🪘</span><span>8 Eastern Tracks</span></div>
+    <div class="feature-item"><span class="feat-icon">🎭</span><span>Mood Filters</span></div>
     <div class="feat-divider"></div>
     <div class="feature-item"><span class="feat-icon">🎵</span><span>8 Genres</span></div>
+    <div class="feat-divider"></div>
+    <div class="feature-item"><span class="feat-icon">🪘</span><span>21 Instruments</span></div>
     <div class="feat-divider"></div>
     <div class="feature-item"><span class="feat-icon">⬇️</span><span>WAV Download</span></div>
     <div class="feat-divider"></div>
     <div class="feature-item"><span class="feat-icon">🔗</span><span>Share Beats</span></div>
   </section>
 
-  <!-- GENRE PICKER -->
+  <!-- GENRE + MOOD SECTION -->
   <section id="genre" class="genre-section">
     <div class="section-header">
-      <h2>Choose Your Genre</h2>
-      <p>Each genre loads a carefully crafted beat pattern with matching BPM and instruments.</p>
+      <h2>Genre × Mood</h2>
+      <p>Filter by mood, then pick a genre. Each combination loads a unique beat variation.</p>
     </div>
 
+    <!-- Mood Filter Bar -->
+    <div class="mood-filter-bar">
+      <span class="mood-filter-label">Filter by mood:</span>
+      <div class="mood-filters">
+        <button class="mood-filter-btn active" data-mood="all" onclick="filterByMood('all', this)">🎵 All</button>
+        <button class="mood-filter-btn" data-mood="happy" onclick="filterByMood('happy', this)">😊 Happy</button>
+        <button class="mood-filter-btn" data-mood="sad" onclick="filterByMood('sad', this)">😢 Sad</button>
+        <button class="mood-filter-btn" data-mood="angry" onclick="filterByMood('angry', this)">😡 Angry</button>
+        <button class="mood-filter-btn" data-mood="calm" onclick="filterByMood('calm', this)">😌 Calm</button>
+        <button class="mood-filter-btn" data-mood="excited" onclick="filterByMood('excited', this)">🤩 Excited</button>
+        <button class="mood-filter-btn" data-mood="romantic" onclick="filterByMood('romantic', this)">❤️ Romantic</button>
+        <button class="mood-filter-btn" data-mood="melancholic" onclick="filterByMood('melancholic', this)">🌧️ Melancholic</button>
+        <button class="mood-filter-btn" data-mood="festive" onclick="filterByMood('festive', this)">🎉 Festive</button>
+      </div>
+    </div>
+
+    <!-- World Tabs -->
     <div class="genre-tabs">
       <button class="genre-tab active" onclick="switchWorld('western', this)">🎸 Western</button>
       <button class="genre-tab" onclick="switchWorld('eastern', this)">🪘 Eastern</button>
     </div>
 
+    <!-- Genre Grids -->
     <div id="westernGenres" class="genre-grid">
-      <div class="genre-card" data-genre="rock" onclick="selectGenre('rock')">
-        <div class="genre-icon">🤘</div>
+      <div class="genre-card" data-genre="rock" data-moods="angry,excited" onclick="openGenreMoodPicker('rock')">
+        <div class="genre-card-top">
+          <div class="genre-icon">🤘</div>
+          <div class="genre-mood-tags">
+            <span class="gmt angry">😡 Angry</span>
+            <span class="gmt excited">🤩 Excited</span>
+          </div>
+        </div>
         <div class="genre-name">Rock</div>
         <div class="genre-desc">Heavy drums, distorted guitar, powerful bass</div>
-        <div class="genre-meta"><span class="gmeta-bpm">140 BPM</span><span class="gmeta-key">Guitar · Kick · Snare</span></div>
+        <div class="genre-meta">
+          <span class="gmeta-bpm" id="rock-bpm">140 BPM</span>
+          <span class="gmeta-key">Guitar · Kick · Snare</span>
+        </div>
+        <button class="genre-select-btn">Pick Mood & Load →</button>
       </div>
-      <div class="genre-card" data-genre="jazz" onclick="selectGenre('jazz')">
-        <div class="genre-icon">🎷</div>
+
+      <div class="genre-card" data-genre="jazz" data-moods="calm,romantic,melancholic" onclick="openGenreMoodPicker('jazz')">
+        <div class="genre-card-top">
+          <div class="genre-icon">🎷</div>
+          <div class="genre-mood-tags">
+            <span class="gmt calm">😌 Calm</span>
+            <span class="gmt romantic">❤️ Romantic</span>
+            <span class="gmt melancholic">🌧️ Melancholic</span>
+          </div>
+        </div>
         <div class="genre-name">Jazz</div>
         <div class="genre-desc">Swinging rhythms, trumpet melody, brushed snare</div>
-        <div class="genre-meta"><span class="gmeta-bpm">100 BPM</span><span class="gmeta-key">Trumpet · Piano · Bass</span></div>
+        <div class="genre-meta">
+          <span class="gmeta-bpm" id="jazz-bpm">100 BPM</span>
+          <span class="gmeta-key">Trumpet · Piano · Bass</span>
+        </div>
+        <button class="genre-select-btn">Pick Mood & Load →</button>
       </div>
-      <div class="genre-card" data-genre="hiphop" onclick="selectGenre('hiphop')">
-        <div class="genre-icon">🎤</div>
+
+      <div class="genre-card" data-genre="hiphop" data-moods="angry,happy,excited" onclick="openGenreMoodPicker('hiphop')">
+        <div class="genre-card-top">
+          <div class="genre-icon">🎤</div>
+          <div class="genre-mood-tags">
+            <span class="gmt angry">😡 Angry</span>
+            <span class="gmt happy">😊 Happy</span>
+            <span class="gmt excited">🤩 Excited</span>
+          </div>
+        </div>
         <div class="genre-name">Hip-Hop</div>
         <div class="genre-desc">Booming 808, crisp snare, sampled hi-hats</div>
-        <div class="genre-meta"><span class="gmeta-bpm">90 BPM</span><span class="gmeta-key">808 Bass · Snare · Hi-Hat</span></div>
+        <div class="genre-meta">
+          <span class="gmeta-bpm" id="hiphop-bpm">90 BPM</span>
+          <span class="gmeta-key">808 Bass · Snare · Hi-Hat</span>
+        </div>
+        <button class="genre-select-btn">Pick Mood & Load →</button>
       </div>
-      <div class="genre-card" data-genre="edm" onclick="selectGenre('edm')">
-        <div class="genre-icon">🎛️</div>
+
+      <div class="genre-card" data-genre="edm" data-moods="happy,excited,festive" onclick="openGenreMoodPicker('edm')">
+        <div class="genre-card-top">
+          <div class="genre-icon">🎛️</div>
+          <div class="genre-mood-tags">
+            <span class="gmt happy">😊 Happy</span>
+            <span class="gmt excited">🤩 Excited</span>
+            <span class="gmt festive">🎉 Festive</span>
+          </div>
+        </div>
         <div class="genre-name">Electronic / EDM</div>
         <div class="genre-desc">Four-on-the-floor kick, synth lead, arpeggios</div>
-        <div class="genre-meta"><span class="gmeta-bpm">128 BPM</span><span class="gmeta-key">Synth · Kick · Strings</span></div>
+        <div class="genre-meta">
+          <span class="gmeta-bpm" id="edm-bpm">128 BPM</span>
+          <span class="gmeta-key">Synth · Kick · Strings</span>
+        </div>
+        <button class="genre-select-btn">Pick Mood & Load →</button>
       </div>
     </div>
 
     <div id="easternGenres" class="genre-grid" style="display:none">
-      <div class="genre-card east" data-genre="bollywood" onclick="selectGenre('bollywood')">
-        <div class="genre-icon">🎬</div>
+      <div class="genre-card east" data-genre="bollywood" data-moods="happy,festive,romantic" onclick="openGenreMoodPicker('bollywood')">
+        <div class="genre-card-top">
+          <div class="genre-icon">🎬</div>
+          <div class="genre-mood-tags">
+            <span class="gmt happy">😊 Happy</span>
+            <span class="gmt festive">🎉 Festive</span>
+            <span class="gmt romantic">❤️ Romantic</span>
+          </div>
+        </div>
         <div class="genre-name">Bollywood</div>
         <div class="genre-desc">Filmi beats, Tabla groove, Sitar melody</div>
-        <div class="genre-meta"><span class="gmeta-bpm">110 BPM</span><span class="gmeta-key">Tabla · Sitar · Dholak</span></div>
+        <div class="genre-meta">
+          <span class="gmeta-bpm" id="bollywood-bpm">110 BPM</span>
+          <span class="gmeta-key">Tabla · Sitar · Dholak</span>
+        </div>
+        <button class="genre-select-btn">Pick Mood & Load →</button>
       </div>
-      <div class="genre-card east" data-genre="hindustani" onclick="selectGenre('hindustani')">
-        <div class="genre-icon">🪔</div>
+
+      <div class="genre-card east" data-genre="hindustani" data-moods="calm,melancholic,romantic" onclick="openGenreMoodPicker('hindustani')">
+        <div class="genre-card-top">
+          <div class="genre-icon">🪔</div>
+          <div class="genre-mood-tags">
+            <span class="gmt calm">😌 Calm</span>
+            <span class="gmt melancholic">🌧️ Melancholic</span>
+            <span class="gmt romantic">❤️ Romantic</span>
+          </div>
+        </div>
         <div class="genre-name">Hindustani Classical</div>
         <div class="genre-desc">Raga-inspired, slow Tabla taal, Tanpura drone</div>
-        <div class="genre-meta"><span class="gmeta-bpm">60 BPM</span><span class="gmeta-key">Tabla · Tanpura · Sitar</span></div>
+        <div class="genre-meta">
+          <span class="gmeta-bpm" id="hindustani-bpm">60 BPM</span>
+          <span class="gmeta-key">Tabla · Tanpura · Sitar</span>
+        </div>
+        <button class="genre-select-btn">Pick Mood & Load →</button>
       </div>
-      <div class="genre-card east" data-genre="carnatic" onclick="selectGenre('carnatic')">
-        <div class="genre-icon">🌺</div>
+
+      <div class="genre-card east" data-genre="carnatic" data-moods="excited,happy,festive" onclick="openGenreMoodPicker('carnatic')">
+        <div class="genre-card-top">
+          <div class="genre-icon">🌺</div>
+          <div class="genre-mood-tags">
+            <span class="gmt excited">🤩 Excited</span>
+            <span class="gmt happy">😊 Happy</span>
+            <span class="gmt festive">🎉 Festive</span>
+          </div>
+        </div>
         <div class="genre-name">Carnatic</div>
         <div class="genre-desc">South Indian Mridangam, fast Bansuri phrases</div>
-        <div class="genre-meta"><span class="gmeta-bpm">120 BPM</span><span class="gmeta-key">Mridangam · Bansuri · Sarangi</span></div>
+        <div class="genre-meta">
+          <span class="gmeta-bpm" id="carnatic-bpm">120 BPM</span>
+          <span class="gmeta-key">Mridangam · Bansuri · Sarangi</span>
+        </div>
+        <button class="genre-select-btn">Pick Mood & Load →</button>
       </div>
-      <div class="genre-card east" data-genre="sufi" onclick="selectGenre('sufi')">
-        <div class="genre-icon">🌙</div>
+
+      <div class="genre-card east" data-genre="sufi" data-moods="sad,calm,melancholic" onclick="openGenreMoodPicker('sufi')">
+        <div class="genre-card-top">
+          <div class="genre-icon">🌙</div>
+          <div class="genre-mood-tags">
+            <span class="gmt sad">😢 Sad</span>
+            <span class="gmt calm">😌 Calm</span>
+            <span class="gmt melancholic">🌧️ Melancholic</span>
+          </div>
+        </div>
         <div class="genre-name">Sufi / Folk</div>
         <div class="genre-desc">Meditative Dhol, soulful Sarangi, Bansuri call</div>
-        <div class="genre-meta"><span class="gmeta-bpm">75 BPM</span><span class="gmeta-key">Dhol · Sarangi · Bansuri</span></div>
+        <div class="genre-meta">
+          <span class="gmeta-bpm" id="sufi-bpm">75 BPM</span>
+          <span class="gmeta-key">Dhol · Sarangi · Bansuri</span>
+        </div>
+        <button class="genre-select-btn">Pick Mood & Load →</button>
       </div>
     </div>
 
+    <!-- Genre Banner -->
     <div id="genreBanner" class="genre-banner" style="display:none">
-      <span id="genreBannerIcon"></span>
-      <div>
-        <div id="genreBannerName" style="font-weight:700; font-size:15px"></div>
-        <div id="genreBannerDesc" style="font-size:12px; opacity:0.8; margin-top:2px"></div>
+      <span id="genreBannerIcon" style="font-size:2rem"></span>
+      <div style="flex:1">
+        <div id="genreBannerName" style="font-weight:700;font-size:15px"></div>
+        <div id="genreBannerDesc" style="font-size:12px;opacity:0.8;margin-top:2px"></div>
       </div>
       <button class="genre-banner-btn" onclick="document.getElementById('sequencer').scrollIntoView({behavior:'smooth'})">Open in Studio →</button>
     </div>
   </section>
+
+  <!-- MOOD PICKER MODAL -->
+  <div id="moodModal" class="modal-overlay" style="display:none" onclick="closeMoodModal(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div id="modalGenreIcon" style="font-size:2rem"></div>
+        <div>
+          <div id="modalGenreName" style="font-family:var(--display);font-size:1.3rem;font-weight:800"></div>
+          <div id="modalGenreDesc" style="font-size:12px;color:var(--text-muted);margin-top:2px"></div>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('moodModal').style.display='none'">✕</button>
+      </div>
+      <p class="modal-subtitle">Choose a mood to shape the beat:</p>
+      <div id="modalMoodOptions" class="modal-mood-grid"></div>
+    </div>
+  </div>
 
   <!-- STUDIO -->
   <section id="sequencer" class="sequencer-section">
@@ -144,14 +274,12 @@
       <h2>The Studio</h2>
       <div id="activeGenreRow" class="active-genre-row" style="display:none">
         <span id="activeGenreBadge" class="active-genre-badge"></span>
+        <span id="activeMoodBadge" class="active-mood-badge"></span>
         <span id="activeGenreDesc" class="active-genre-desc"></span>
       </div>
-      <p style="margin-top:6px">Click steps to toggle. Use the genre picker above to load a full beat.</p>
     </div>
 
     <div class="sequencer-card">
-
-      <!-- Transport -->
       <div class="transport">
         <div class="transport-left">
           <button class="transport-btn play" id="playBtn">▶ Play</button>
@@ -171,14 +299,12 @@
         </div>
       </div>
 
-      <!-- World Tabs -->
       <div class="world-tabs">
         <button class="world-tab active" id="tabWestern" onclick="showWorld('western')">🎸 Western</button>
         <button class="world-tab" id="tabEastern" onclick="showWorld('eastern')">🪘 Eastern</button>
         <button class="world-tab" id="tabBoth" onclick="showWorld('both')">🌍 Both</button>
       </div>
 
-      <!-- Step Numbers -->
       <div class="step-numbers">
         <div class="track-label-spacer"></div>
         <div class="step-nums">
@@ -189,19 +315,16 @@
         </div>
       </div>
 
-      <!-- Grid -->
       <div id="grid"></div>
 
-      <!-- Save Bar -->
       <div class="save-bar">
         <input type="text" id="patternName" placeholder="Name your pattern..." class="pattern-name-input">
         <button class="transport-btn save" id="saveBtn">💾 Save</button>
       </div>
 
-      <!-- Status -->
       <div class="status-bar">
         <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Ready — pick a genre or click steps to build your beat!</span>
+        <span id="statusText">Ready — pick a genre + mood to start!</span>
       </div>
     </div>
   </section>
@@ -210,7 +333,7 @@
   <section id="library" class="library-section">
     <div class="section-header">
       <h2>Your Pattern Library</h2>
-      <p>All saved beats with genre tags. Load, share or delete anytime.</p>
+      <p>All saved beats with genre and mood tags.</p>
     </div>
     <div id="patternList" class="pattern-list"></div>
   </section>
@@ -220,13 +343,13 @@
     <div class="about-inner">
       <div class="about-text">
         <h2>What is BeatForge?</h2>
-        <p>BeatForge is a free browser-based beat studio with 17 realistic instruments spanning Eastern and Western traditions — from Electric Guitar and Trumpet to Tabla, Bansuri and Tanpura drone.</p>
-        <p>Pick a genre, build your beat, download as WAV and share with anyone.</p>
+        <p>BeatForge is a free browser beat studio with 21 realistic instruments, 8 genres, mood-based beat variations, WAV download and pattern sharing.</p>
+        <p>Pick your genre, choose your mood, download your beat and share it with anyone — no signup needed.</p>
       </div>
       <div class="about-stats">
-        <div class="stat"><div class="stat-num">17</div><div class="stat-label">Instruments</div></div>
+        <div class="stat"><div class="stat-num">21</div><div class="stat-label">Instruments</div></div>
         <div class="stat"><div class="stat-num">8</div><div class="stat-label">Genres</div></div>
-        <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Patterns</div></div>
+        <div class="stat"><div class="stat-num">8</div><div class="stat-label">Moods</div></div>
       </div>
     </div>
   </section>
@@ -234,7 +357,7 @@
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-logo"><span class="logo-icon">⬡</span> BeatForge</div>
-      <p class="footer-tagline">Eastern meets Western. Beats meet browser.</p>
+      <p class="footer-tagline">Your mood. Your genre. Your beat.</p>
       <p class="footer-copy">© 2026 BeatForge. Free forever.</p>
     </div>
   </footer>

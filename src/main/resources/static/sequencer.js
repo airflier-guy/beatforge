@@ -1,609 +1,535 @@
-// ── BeatForge v4 — Realistic Eastern & Western Synthesis ──
+// ── BeatForge v5 — Genre × Mood System + Realistic Synthesis ──
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// ─────────────────────────────────────────────
-// REALISTIC SOUND SYNTHESIS ENGINE
-// Each instrument uses layered oscillators,
-// noise, filters and envelopes to approximate
-// the real acoustic character of the instrument.
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────
+// REALISTIC SOUND ENGINE
+// ─────────────────────────────────────────
 
-function masterGain(val) {
-  const g = audioCtx.createGain();
-  g.gain.value = val;
-  g.connect(audioCtx.destination);
-  return g;
+function noise(dur, gainVal, filterFreq, filterType, t0, ac) {
+  try {
+    const ctx = ac || audioCtx;
+    const bufSize = Math.ceil(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const flt = ctx.createBiquadFilter();
+    flt.type = filterType || 'bandpass';
+    flt.frequency.value = filterFreq || 1000;
+    flt.Q.value = 1.5;
+    const g = ctx.createGain();
+    src.connect(flt); flt.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(gainVal, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.start(t0); src.stop(t0 + dur);
+  } catch(e) {}
 }
 
-function osc(type, freq, start, stop, gainVal, pitchEnd, ctx) {
-  const ac = ctx || audioCtx;
-  const o = ac.createOscillator();
-  const g = ac.createGain();
-  o.connect(g); g.connect(ac.destination);
-  o.type = type;
-  o.frequency.setValueAtTime(freq, start);
-  if (pitchEnd) o.frequency.exponentialRampToValueAtTime(pitchEnd, stop);
-  g.gain.setValueAtTime(gainVal, start);
-  g.gain.exponentialRampToValueAtTime(0.0001, stop);
-  o.start(start); o.stop(stop);
-  return { osc: o, gain: g };
-}
-
-function noise(dur, gainVal, filterFreq, filterType, start, ctx) {
-  const ac = ctx || audioCtx;
-  const bufSize = ac.sampleRate * dur;
-  const buf = ac.createBuffer(1, bufSize, ac.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
-  const src = ac.createBufferSource();
-  src.buffer = buf;
-  const filter = ac.createBiquadFilter();
-  filter.type = filterType || 'bandpass';
-  filter.frequency.value = filterFreq || 1000;
-  filter.Q.value = 1.5;
-  const g = ac.createGain();
-  src.connect(filter); filter.connect(g); g.connect(ac.destination);
-  g.gain.setValueAtTime(gainVal, start);
-  g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-  src.start(start); src.stop(start + dur);
-}
-
-// ── WESTERN INSTRUMENTS ──
-
-function playKick(t, ctx) {
-  const ac = ctx || audioCtx;
-  // Sub thud + punch layer
-  const sub = ac.createOscillator(), subG = ac.createGain();
-  sub.connect(subG); subG.connect(ac.destination);
-  sub.type = 'sine';
-  sub.frequency.setValueAtTime(160, t);
-  sub.frequency.exponentialRampToValueAtTime(40, t + 0.06);
-  subG.gain.setValueAtTime(1.0, t);
-  subG.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
-  sub.start(t); sub.stop(t + 0.5);
-  // Click transient
-  noise(0.01, 0.4, 3000, 'bandpass', t, ac);
-}
-
-function playSnare(t, ctx) {
-  const ac = ctx || audioCtx;
-  // Tonal body
-  const o = ac.createOscillator(), g = ac.createGain();
-  o.connect(g); g.connect(ac.destination);
-  o.type = 'triangle';
-  o.frequency.setValueAtTime(200, t);
-  o.frequency.exponentialRampToValueAtTime(100, t + 0.12);
-  g.gain.setValueAtTime(0.5, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-  o.start(t); o.stop(t + 0.18);
-  // Snare rattle noise
-  noise(0.18, 0.6, 2500, 'highpass', t, ac);
-}
-
-function playHihat(t, open, ctx) {
-  const ac = ctx || audioCtx;
-  const dur = open ? 0.35 : 0.055;
-  noise(dur, 0.3, 8000, 'highpass', t, ac);
-}
-
-function playBass808(t, note, ctx) {
-  const ac = ctx || audioCtx;
-  const freq = note || 55;
-  const o = ac.createOscillator(), g = ac.createGain();
-  const dist = ac.createWaveShaper();
-  // Soft clipping for 808 character
-  const curve = new Float32Array(256);
-  for (let i = 0; i < 256; i++) {
-    const x = (i * 2) / 256 - 1;
-    curve[i] = (Math.PI + 200) * x / (Math.PI + 200 * Math.abs(x));
-  }
-  dist.curve = curve;
-  o.connect(dist); dist.connect(g); g.connect(ac.destination);
-  o.type = 'sine';
-  o.frequency.setValueAtTime(freq, t);
-  o.frequency.exponentialRampToValueAtTime(freq * 0.5, t + 0.8);
-  g.gain.setValueAtTime(0.9, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
-  o.start(t); o.stop(t + 0.9);
-}
-
-function playSynth(t, freq, ctx) {
-  const ac = ctx || audioCtx;
-  const f = freq || 440;
-  // Sawtooth through low-pass filter — classic synth
-  const o = ac.createOscillator(), filter = ac.createBiquadFilter(), g = ac.createGain();
-  o.connect(filter); filter.connect(g); g.connect(ac.destination);
-  o.type = 'sawtooth';
-  o.frequency.setValueAtTime(f, t);
-  filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(2000, t);
-  filter.frequency.exponentialRampToValueAtTime(300, t + 0.3);
-  filter.Q.value = 8;
-  g.gain.setValueAtTime(0.4, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
-  o.start(t); o.stop(t + 0.35);
-}
-
-function playElectricGuitar(t, freq, ctx) {
-  const ac = ctx || audioCtx;
-  const f = freq || 196; // G3
-  // Plucked string: short attack sawtooth + harmonics + slight overdrive
-  [1, 2, 3, 4].forEach((h, i) => {
-    const o = ac.createOscillator(), g = ac.createGain();
-    const dist = ac.createWaveShaper();
-    const curve = new Float32Array(128);
-    for (let j = 0; j < 128; j++) {
-      const x = (j * 2) / 128 - 1;
-      curve[j] = x * (1 + 50 * Math.abs(x)) / (1 + 50 * Math.abs(x) * Math.abs(x));
-    }
-    dist.curve = curve;
-    o.connect(dist); dist.connect(g); g.connect(ac.destination);
-    o.type = h === 1 ? 'sawtooth' : 'sine';
-    o.frequency.setValueAtTime(f * h, t);
-    // slight pitch instability for realism
-    o.frequency.setValueAtTime(f * h * 1.002, t + 0.01);
-    const amp = [0.5, 0.25, 0.12, 0.06][i];
-    g.gain.setValueAtTime(amp, t);
-    g.gain.setValueAtTime(amp * 0.8, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
-    o.start(t); o.stop(t + 0.45);
-  });
-  // Body thump
-  noise(0.03, 0.15, 400, 'lowpass', t, ac);
-}
-
-function playPiano(t, freq, ctx) {
-  const ac = ctx || audioCtx;
-  const f = freq || 261.63; // C4
-  // Piano: hammer transient + decaying harmonics
-  [1, 2, 3, 4, 5].forEach((h, i) => {
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
+function playKick(t0, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
     o.type = 'sine';
-    o.frequency.setValueAtTime(f * h, t);
-    const amps = [0.6, 0.3, 0.15, 0.08, 0.04];
-    const decays = [1.2, 0.9, 0.7, 0.5, 0.35];
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(amps[i], t + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + decays[i]);
-    o.start(t); o.stop(t + decays[i]);
-  });
-  // Hammer click
-  noise(0.008, 0.2, 5000, 'bandpass', t, ac);
+    o.frequency.setValueAtTime(160, t0);
+    o.frequency.exponentialRampToValueAtTime(40, t0 + 0.07);
+    g.gain.setValueAtTime(1.0, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+    o.start(t0); o.stop(t0 + 0.5);
+    noise(0.012, 0.5, 2800, 'bandpass', t0, ctx);
+  } catch(e) {}
 }
 
-function playTrumpet(t, freq, ctx) {
-  const ac = ctx || audioCtx;
-  const f = freq || 329.63; // E4
-  // Trumpet: bright buzzy tone with formant filtering
-  const o = ac.createOscillator(), filter = ac.createBiquadFilter(), g = ac.createGain();
-  o.connect(filter); filter.connect(g); g.connect(ac.destination);
-  o.type = 'sawtooth';
-  o.frequency.setValueAtTime(f * 0.98, t);
-  o.frequency.linearRampToValueAtTime(f, t + 0.04); // lip attack
-  filter.type = 'bandpass';
-  filter.frequency.setValueAtTime(1200, t);
-  filter.Q.value = 3;
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.5, t + 0.04);
-  g.gain.setValueAtTime(0.45, t + 0.18);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-  o.start(t); o.stop(t + 0.3);
-  // Second harmonic layer
-  const o2 = ac.createOscillator(), g2 = ac.createGain();
-  o2.connect(g2); g2.connect(ac.destination);
-  o2.type = 'square';
-  o2.frequency.setValueAtTime(f * 2, t);
-  g2.gain.setValueAtTime(0.1, t + 0.04);
-  g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-  o2.start(t); o2.stop(t + 0.3);
-}
-
-function playStrings(t, freq, ctx) {
-  const ac = ctx || audioCtx;
-  const f = freq || 196;
-  // Bowed string: slow attack, rich harmonics, vibrato
-  [1, 2, 3].forEach((h, i) => {
-    const o = ac.createOscillator(), vib = ac.createOscillator(), vibG = ac.createGain(), g = ac.createGain();
-    vib.connect(vibG); vibG.connect(o.frequency);
-    o.connect(g); g.connect(ac.destination);
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(f * h, t);
-    // vibrato
-    vib.frequency.value = 5.5;
-    vibG.gain.value = 4;
-    vib.start(t); vib.stop(t + 0.7);
-    const amp = [0.3, 0.15, 0.07][i];
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(amp, t + 0.06); // slow bow attack
-    g.gain.setValueAtTime(amp, t + 0.5);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
-    o.start(t); o.stop(t + 0.7);
-  });
-}
-
-// ── EASTERN INSTRUMENTS ──
-
-function playTabla(t, variant, ctx) {
-  // variant: 'na' (high), 'ta' (mid), 'ge' (low bass)
-  const ac = ctx || audioCtx;
-  const configs = {
-    na: { f: 380, f2: 760, decay: 0.12, gain: 0.7 },
-    ta: { f: 240, f2: 480, decay: 0.18, gain: 0.8 },
-    ge: { f: 110, f2: 220, decay: 0.35, gain: 0.9 },
-  };
-  const cfg = configs[variant] || configs.ta;
-  // Membrane resonance: pitch drops fast
-  const o = ac.createOscillator(), g = ac.createGain();
-  o.connect(g); g.connect(ac.destination);
-  o.type = 'sine';
-  o.frequency.setValueAtTime(cfg.f * 1.4, t);
-  o.frequency.exponentialRampToValueAtTime(cfg.f, t + 0.03);
-  o.frequency.exponentialRampToValueAtTime(cfg.f * 0.7, t + cfg.decay);
-  g.gain.setValueAtTime(cfg.gain, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + cfg.decay);
-  o.start(t); o.stop(t + cfg.decay);
-  // Overtone ring
-  const o2 = ac.createOscillator(), g2 = ac.createGain();
-  o2.connect(g2); g2.connect(ac.destination);
-  o2.type = 'sine';
-  o2.frequency.setValueAtTime(cfg.f2, t);
-  o2.frequency.exponentialRampToValueAtTime(cfg.f2 * 0.6, t + cfg.decay * 0.6);
-  g2.gain.setValueAtTime(cfg.gain * 0.3, t);
-  g2.gain.exponentialRampToValueAtTime(0.0001, t + cfg.decay * 0.6);
-  o2.start(t); o2.stop(t + cfg.decay * 0.6);
-  // Skin attack noise
-  noise(0.015, 0.3, 1200, 'bandpass', t, ac);
-}
-
-function playDhol(t, side, ctx) {
-  // side: 'bass' (left) or 'treble' (right)
-  const ac = ctx || audioCtx;
-  if (side === 'treble') {
-    // Thin stick hit
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
+function playSnare(t0, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
     o.type = 'triangle';
-    o.frequency.setValueAtTime(320, t);
-    o.frequency.exponentialRampToValueAtTime(180, t + 0.08);
-    g.gain.setValueAtTime(0.7, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-    o.start(t); o.stop(t + 0.12);
-    noise(0.06, 0.35, 3000, 'highpass', t, ac);
-  } else {
-    // Deep booming bass side
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
+    o.frequency.setValueAtTime(220, t0);
+    o.frequency.exponentialRampToValueAtTime(100, t0 + 0.14);
+    g.gain.setValueAtTime(0.5, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+    o.start(t0); o.stop(t0 + 0.2);
+    noise(0.2, 0.65, 3000, 'highpass', t0, ctx);
+  } catch(e) {}
+}
+
+function playHihat(t0, open, ac) {
+  const ctx = ac || audioCtx;
+  noise(open ? 0.35 : 0.055, 0.3, 9000, 'highpass', t0, ctx);
+}
+
+function play808(t0, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    const ws = ctx.createWaveShaper();
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) { const x = (i*2)/256-1; curve[i] = (Math.PI+200)*x/(Math.PI+200*Math.abs(x)); }
+    ws.curve = curve;
+    o.connect(ws); ws.connect(g); g.connect(ctx.destination);
     o.type = 'sine';
-    o.frequency.setValueAtTime(90, t);
-    o.frequency.exponentialRampToValueAtTime(45, t + 0.25);
-    g.gain.setValueAtTime(1.0, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
-    o.start(t); o.stop(t + 0.4);
-    noise(0.02, 0.25, 200, 'lowpass', t, ac);
-  }
+    o.frequency.setValueAtTime(55, t0);
+    o.frequency.exponentialRampToValueAtTime(28, t0 + 0.9);
+    g.gain.setValueAtTime(0.9, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.0);
+    o.start(t0); o.stop(t0 + 1.0);
+  } catch(e) {}
 }
 
-function playSitar(t, freq, ctx) {
-  const ac = ctx || audioCtx;
-  const f = freq || 196;
-  // Sitar: plucked with sympathetic string buzz
-  [1, 2, 3, 4, 5].forEach((h, i) => {
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
-    o.type = i === 0 ? 'sawtooth' : 'sine';
-    // Slight inharmonicity (jawari buzzing)
-    const inharmonic = 1 + (i * 0.002);
-    o.frequency.setValueAtTime(f * h * inharmonic, t);
-    o.frequency.setValueAtTime(f * h * inharmonic * 0.998, t + 0.01); // jawari flutter
-    const amps = [0.45, 0.25, 0.15, 0.08, 0.04];
-    const decays = [1.2, 0.9, 0.65, 0.4, 0.25];
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(amps[i], t + 0.004);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + decays[i]);
-    o.start(t); o.stop(t + decays[i]);
-  });
-  // Sympathetic strings hiss
-  noise(0.06, 0.08, 3000, 'bandpass', t, ac);
-  // Pluck transient
-  noise(0.005, 0.2, 1800, 'bandpass', t, ac);
+function playSynth(t0, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    const o = ctx.createOscillator(), flt = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.connect(flt); flt.connect(g); g.connect(ctx.destination);
+    o.type = 'sawtooth'; o.frequency.value = 440;
+    flt.type = 'lowpass'; flt.frequency.setValueAtTime(2200, t0); flt.frequency.exponentialRampToValueAtTime(300, t0 + 0.3); flt.Q.value = 9;
+    g.gain.setValueAtTime(0.4, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+    o.start(t0); o.stop(t0 + 0.35);
+  } catch(e) {}
 }
 
-function playDholak(t, ctx) {
-  const ac = ctx || audioCtx;
-  // Mid-pitched double-headed drum
-  const o = ac.createOscillator(), g = ac.createGain();
-  o.connect(g); g.connect(ac.destination);
-  o.type = 'sine';
-  o.frequency.setValueAtTime(160, t);
-  o.frequency.exponentialRampToValueAtTime(75, t + 0.15);
-  g.gain.setValueAtTime(0.8, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-  o.start(t); o.stop(t + 0.22);
-  noise(0.04, 0.2, 500, 'bandpass', t, ac);
-}
-
-function playBansuri(t, freq, ctx) {
-  const ac = ctx || audioCtx;
-  const f = freq || 523; // C5 — bansuri sits high
-  // Breathy flute: sine + noise blend
-  const o = ac.createOscillator(), vib = ac.createOscillator(), vibG = ac.createGain(), g = ac.createGain();
-  vib.connect(vibG); vibG.connect(o.frequency);
-  o.connect(g); g.connect(ac.destination);
-  o.type = 'sine';
-  o.frequency.setValueAtTime(f, t);
-  // Gentle meend (glide up)
-  o.frequency.linearRampToValueAtTime(f * 1.005, t + 0.08);
-  // Slow vibrato
-  vib.frequency.value = 5;
-  vibG.gain.setValueAtTime(0, t + 0.1);
-  vibG.gain.linearRampToValueAtTime(5, t + 0.2);
-  vib.start(t); vib.stop(t + 0.5);
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.5, t + 0.04);
-  g.gain.setValueAtTime(0.45, t + 0.35);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-  o.start(t); o.stop(t + 0.55);
-  // Breath noise layer
-  const bufSize = ac.sampleRate * 0.5;
-  const buf = ac.createBuffer(1, bufSize, ac.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * 0.15;
-  const ns = ac.createBufferSource(); ns.buffer = buf;
-  const flt = ac.createBiquadFilter(); flt.type = 'bandpass'; flt.frequency.value = f; flt.Q.value = 20;
-  const ng = ac.createGain();
-  ns.connect(flt); flt.connect(ng); ng.connect(ac.destination);
-  ng.gain.setValueAtTime(0, t);
-  ng.gain.linearRampToValueAtTime(0.12, t + 0.04);
-  ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
-  ns.start(t); ns.stop(t + 0.5);
-}
-
-function playMridangam(t, side, ctx) {
-  const ac = ctx || audioCtx;
-  if (side === 'thoppi') {
-    // Bass left side
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
-    o.type = 'sine';
-    o.frequency.setValueAtTime(130, t);
-    o.frequency.exponentialRampToValueAtTime(60, t + 0.2);
-    g.gain.setValueAtTime(0.85, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
-    o.start(t); o.stop(t + 0.28);
-    noise(0.015, 0.2, 300, 'lowpass', t, ac);
-  } else {
-    // Crisp right side (valanthalai)
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.connect(g); g.connect(ac.destination);
-    o.type = 'sine';
-    o.frequency.setValueAtTime(440, t);
-    o.frequency.exponentialRampToValueAtTime(300, t + 0.08);
-    g.gain.setValueAtTime(0.7, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-    o.start(t); o.stop(t + 0.12);
-    noise(0.012, 0.4, 4000, 'highpass', t, ac);
-  }
-}
-
-function playSarangi(t, freq, ctx) {
-  const ac = ctx || audioCtx;
-  const f = freq || 261;
-  // Bowed, nasal, lots of harmonics — similar to a hurdy-gurdy timbre
-  [1, 2, 3, 4].forEach((h, i) => {
-    const o = ac.createOscillator(), vib = ac.createOscillator(), vG = ac.createGain(), g = ac.createGain();
-    vib.connect(vG); vG.connect(o.frequency);
-    o.connect(g); g.connect(ac.destination);
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(f * h, t);
-    vib.frequency.value = 6;
-    vG.gain.value = 3;
-    vib.start(t); vib.stop(t + 0.55);
-    const amps = [0.3, 0.2, 0.12, 0.06];
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(amps[i], t + 0.05);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-    o.start(t); o.stop(t + 0.55);
-  });
-}
-
-function playTanpura(t, key, ctx) {
-  const ac = ctx || audioCtx;
-  // Tanpura: four open strings plucked in sequence, continuous drone
-  // Tuned to Sa-Pa-Sa-Sa (1-5-8-8)
-  const freqs = key === 'low' ? [65, 98, 130, 130] : [130, 195, 261, 261];
-  freqs.forEach((f, i) => {
-    const delay = i * 0.06;
-    // Each string: strong fundamental + decay
-    [1, 2, 3].forEach((h, hi) => {
-      const o = ac.createOscillator(), g = ac.createGain();
-      o.connect(g); g.connect(ac.destination);
-      o.type = 'sine';
-      o.frequency.setValueAtTime(f * h, t + delay);
-      const amp = [0.3, 0.12, 0.06][hi];
-      g.gain.setValueAtTime(amp, t + delay);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + delay + 1.8);
-      o.start(t + delay); o.stop(t + delay + 1.8);
+function playGuitar(t0, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    [1,2,3,4].forEach((h,i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), ws = ctx.createWaveShaper();
+      const c = new Float32Array(128);
+      for (let j=0;j<128;j++) { const x=(j*2)/128-1; c[j]=x*(1+60*Math.abs(x))/(1+60*Math.abs(x)*Math.abs(x)); }
+      ws.curve = c;
+      o.connect(ws); ws.connect(g); g.connect(ctx.destination);
+      o.type = h===1?'sawtooth':'sine';
+      o.frequency.setValueAtTime(196*h, t0);
+      o.frequency.setValueAtTime(196*h*1.002, t0+0.01);
+      const amps=[0.5,0.25,0.12,0.06];
+      g.gain.setValueAtTime(amps[i], t0);
+      g.gain.setValueAtTime(amps[i]*0.8, t0+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+0.5);
+      o.start(t0); o.stop(t0+0.5);
     });
-    // Jawari buzz per string
-    noise(0.05, 0.06, f * 4, 'bandpass', t + delay, ac);
-  });
+    noise(0.025, 0.12, 400, 'lowpass', t0, ctx);
+  } catch(e) {}
 }
 
-// ── DISPATCH TABLE ──
-// Maps track name → play function + pitch
-const INSTRUMENTS = {
-  // Western
-  'Kick':     (t, ctx) => playKick(t, ctx),
-  'Snare':    (t, ctx) => playSnare(t, ctx),
-  'Hi-Hat':   (t, ctx) => playHihat(t, false, ctx),
-  'Open-Hat': (t, ctx) => playHihat(t, true, ctx),
-  '808 Bass': (t, ctx) => playBass808(t, 55, ctx),
-  'Synth':    (t, ctx) => playSynth(t, 440, ctx),
-  'Guitar':   (t, ctx) => playElectricGuitar(t, 196, ctx),
-  'Piano':    (t, ctx) => playPiano(t, 261.63, ctx),
-  'Trumpet':  (t, ctx) => playTrumpet(t, 329.63, ctx),
-  'Strings':  (t, ctx) => playStrings(t, 196, ctx),
-  // Eastern
-  'Tabla-Na': (t, ctx) => playTabla(t, 'na', ctx),
-  'Tabla-Ge': (t, ctx) => playTabla(t, 'ge', ctx),
-  'Dhol':     (t, ctx) => playDhol(t, 'bass', ctx),
-  'Dhol-Hi':  (t, ctx) => playDhol(t, 'treble', ctx),
-  'Sitar':    (t, ctx) => playSitar(t, 196, ctx),
-  'Dholak':   (t, ctx) => playDholak(t, ctx),
-  'Bansuri':  (t, ctx) => playBansuri(t, 523, ctx),
-  'Mridangam':(t, ctx) => playMridangam(t, 'valanthalai', ctx),
-  'Mridangam-B':(t, ctx) => playMridangam(t, 'thoppi', ctx),
-  'Sarangi':  (t, ctx) => playSarangi(t, 261, ctx),
-  'Tanpura':  (t, ctx) => playTanpura(t, 'mid', ctx),
-};
+function playPiano(t0, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    [1,2,3,4,5].forEach((h,i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine'; o.frequency.value = 261.63*h;
+      const amps=[0.6,0.3,0.15,0.08,0.04], dec=[1.2,0.9,0.7,0.5,0.35];
+      g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(amps[i],t0+0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+dec[i]);
+      o.start(t0); o.stop(t0+dec[i]);
+    });
+    noise(0.008, 0.2, 5000, 'bandpass', t0, ctx);
+  } catch(e) {}
+}
+
+function playTrumpet(t0, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    const o = ctx.createOscillator(), flt = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.connect(flt); flt.connect(g); g.connect(ctx.destination);
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(329*0.98, t0); o.frequency.linearRampToValueAtTime(329, t0+0.04);
+    flt.type = 'bandpass'; flt.frequency.value = 1200; flt.Q.value = 3;
+    g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(0.5,t0+0.04);
+    g.gain.setValueAtTime(0.45,t0+0.18); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.32);
+    o.start(t0); o.stop(t0+0.32);
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.type='square'; o2.frequency.value=658;
+    g2.gain.setValueAtTime(0.08,t0+0.04); g2.gain.exponentialRampToValueAtTime(0.0001,t0+0.32);
+    o2.start(t0); o2.stop(t0+0.32);
+  } catch(e) {}
+}
+
+function playStrings(t0, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    [1,2,3].forEach((h,i) => {
+      const o = ctx.createOscillator(), vib = ctx.createOscillator(), vG = ctx.createGain(), g = ctx.createGain();
+      vib.connect(vG); vG.connect(o.frequency);
+      o.connect(g); g.connect(ctx.destination);
+      o.type='sawtooth'; o.frequency.value=196*h;
+      vib.frequency.value=5.5; vG.gain.value=4;
+      vib.start(t0); vib.stop(t0+0.7);
+      const amps=[0.3,0.15,0.07];
+      g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(amps[i],t0+0.07);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+0.7);
+      o.start(t0); o.stop(t0+0.7);
+    });
+  } catch(e) {}
+}
+
+// ── EASTERN ──
+
+function playTabla(t0, variant, ac) {
+  const ctx = ac || audioCtx;
+  const cfgs = {
+    na:{f:380,f2:760,dec:0.12,gain:0.7},
+    ta:{f:240,f2:480,dec:0.18,gain:0.8},
+    ge:{f:110,f2:220,dec:0.35,gain:0.9}
+  };
+  const c = cfgs[variant]||cfgs.ta;
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type='sine';
+    o.frequency.setValueAtTime(c.f*1.4,t0); o.frequency.exponentialRampToValueAtTime(c.f,t0+0.03);
+    o.frequency.exponentialRampToValueAtTime(c.f*0.7,t0+c.dec);
+    g.gain.setValueAtTime(c.gain,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+c.dec);
+    o.start(t0); o.stop(t0+c.dec);
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.type='sine'; o2.frequency.setValueAtTime(c.f2,t0); o2.frequency.exponentialRampToValueAtTime(c.f2*0.6,t0+c.dec*0.6);
+    g2.gain.setValueAtTime(c.gain*0.3,t0); g2.gain.exponentialRampToValueAtTime(0.0001,t0+c.dec*0.6);
+    o2.start(t0); o2.stop(t0+c.dec*0.6);
+    noise(0.015,0.3,1200,'bandpass',t0,ctx);
+  } catch(e) {}
+}
+
+function playDhol(t0, side, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    if (side==='treble') {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='triangle'; o.frequency.setValueAtTime(320,t0); o.frequency.exponentialRampToValueAtTime(180,t0+0.08);
+      g.gain.setValueAtTime(0.7,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.12);
+      o.start(t0); o.stop(t0+0.12);
+      noise(0.06,0.35,3000,'highpass',t0,ctx);
+    } else {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='sine'; o.frequency.setValueAtTime(90,t0); o.frequency.exponentialRampToValueAtTime(45,t0+0.28);
+      g.gain.setValueAtTime(1.0,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.42);
+      o.start(t0); o.stop(t0+0.42);
+      noise(0.02,0.25,200,'lowpass',t0,ctx);
+    }
+  } catch(e) {}
+}
+
+function playSitar(t0, ac) {
+  const ctx = ac || audioCtx;
+  const f = 196;
+  try {
+    [1,2,3,4,5].forEach((h,i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = i===0?'sawtooth':'sine';
+      o.frequency.setValueAtTime(f*h*(1+i*0.002),t0);
+      o.frequency.setValueAtTime(f*h*(1+i*0.002)*0.998,t0+0.01);
+      const amps=[0.45,0.25,0.15,0.08,0.04],decs=[1.2,0.9,0.65,0.4,0.25];
+      g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(amps[i],t0+0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+decs[i]);
+      o.start(t0); o.stop(t0+decs[i]);
+    });
+    noise(0.06,0.08,3000,'bandpass',t0,ctx);
+    noise(0.005,0.2,1800,'bandpass',t0,ctx);
+  } catch(e) {}
+}
+
+function playDholak(t0, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type='sine'; o.frequency.setValueAtTime(160,t0); o.frequency.exponentialRampToValueAtTime(75,t0+0.15);
+    g.gain.setValueAtTime(0.8,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.22);
+    o.start(t0); o.stop(t0+0.22);
+    noise(0.04,0.2,500,'bandpass',t0,ctx);
+  } catch(e) {}
+}
+
+function playBansuri(t0, ac) {
+  const ctx = ac || audioCtx;
+  const f = 523;
+  try {
+    const o = ctx.createOscillator(), vib = ctx.createOscillator(), vG = ctx.createGain(), g = ctx.createGain();
+    vib.connect(vG); vG.connect(o.frequency);
+    o.connect(g); g.connect(ctx.destination);
+    o.type='sine'; o.frequency.setValueAtTime(f,t0); o.frequency.linearRampToValueAtTime(f*1.005,t0+0.08);
+    vib.frequency.value=5; vG.gain.setValueAtTime(0,t0+0.1); vG.gain.linearRampToValueAtTime(5,t0+0.2);
+    vib.start(t0); vib.stop(t0+0.55);
+    g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(0.5,t0+0.04);
+    g.gain.setValueAtTime(0.45,t0+0.35); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.55);
+    o.start(t0); o.stop(t0+0.55);
+    const bufSize = Math.ceil(ctx.sampleRate*0.5);
+    const buf = ctx.createBuffer(1,bufSize,ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<bufSize;i++) d[i]=(Math.random()*2-1)*0.15;
+    const ns = ctx.createBufferSource(); ns.buffer=buf;
+    const flt = ctx.createBiquadFilter(); flt.type='bandpass'; flt.frequency.value=f; flt.Q.value=20;
+    const ng = ctx.createGain();
+    ns.connect(flt); flt.connect(ng); ng.connect(ctx.destination);
+    ng.gain.setValueAtTime(0,t0); ng.gain.linearRampToValueAtTime(0.12,t0+0.04);
+    ng.gain.exponentialRampToValueAtTime(0.0001,t0+0.5);
+    ns.start(t0); ns.stop(t0+0.5);
+  } catch(e) {}
+}
+
+function playMridangam(t0, side, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    if (side==='thoppi') {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='sine'; o.frequency.setValueAtTime(130,t0); o.frequency.exponentialRampToValueAtTime(60,t0+0.2);
+      g.gain.setValueAtTime(0.85,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.28);
+      o.start(t0); o.stop(t0+0.28);
+      noise(0.015,0.2,300,'lowpass',t0,ctx);
+    } else {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type='sine'; o.frequency.setValueAtTime(440,t0); o.frequency.exponentialRampToValueAtTime(300,t0+0.08);
+      g.gain.setValueAtTime(0.7,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.12);
+      o.start(t0); o.stop(t0+0.12);
+      noise(0.012,0.4,4000,'highpass',t0,ctx);
+    }
+  } catch(e) {}
+}
+
+function playSarangi(t0, ac) {
+  const ctx = ac || audioCtx;
+  try {
+    [1,2,3,4].forEach((h,i) => {
+      const o = ctx.createOscillator(), vib = ctx.createOscillator(), vG = ctx.createGain(), g = ctx.createGain();
+      vib.connect(vG); vG.connect(o.frequency);
+      o.connect(g); g.connect(ctx.destination);
+      o.type='sawtooth'; o.frequency.value=261*h;
+      vib.frequency.value=6; vG.gain.value=3;
+      vib.start(t0); vib.stop(t0+0.55);
+      const amps=[0.3,0.2,0.12,0.06];
+      g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(amps[i],t0+0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+0.55);
+      o.start(t0); o.stop(t0+0.55);
+    });
+  } catch(e) {}
+}
+
+function playTanpura(t0, ac) {
+  const ctx = ac || audioCtx;
+  const freqs = [130,195,261,261];
+  freqs.forEach((f,i) => {
+    const delay = i*0.07;
+    try {
+      [1,2,3].forEach((h,hi) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type='sine'; o.frequency.value=f*h;
+        const amps=[0.3,0.12,0.06];
+        g.gain.setValueAtTime(amps[hi],t0+delay);
+        g.gain.exponentialRampToValueAtTime(0.0001,t0+delay+1.8);
+        o.start(t0+delay); o.stop(t0+delay+1.8);
+      });
+      noise(0.05,0.06,f*4,'bandpass',t0+delay,ctx);
+    } catch(e) {}
+  });
+}
 
 // ── TRACK DEFINITIONS ──
 const TRACKS = [
-  // WESTERN
-  { name:'Kick',     color:'#e8521a', world:'western', label:'Kick Drum' },
-  { name:'Snare',    color:'#f59e0b', world:'western', label:'Snare' },
-  { name:'Hi-Hat',   color:'#10b981', world:'western', label:'Hi-Hat' },
-  { name:'Open-Hat', color:'#059669', world:'western', label:'Open Hat' },
-  { name:'808 Bass', color:'#6366f1', world:'western', label:'808 Bass' },
-  { name:'Guitar',   color:'#dc2626', world:'western', label:'E. Guitar' },
-  { name:'Piano',    color:'#0ea5e9', world:'western', label:'Piano' },
-  { name:'Trumpet',  color:'#d97706', world:'western', label:'Trumpet' },
-  { name:'Strings',  color:'#7c3aed', world:'western', label:'Strings' },
-  { name:'Synth',    color:'#ec4899', world:'western', label:'Synth' },
-  // EASTERN
-  { name:'Tabla-Na', color:'#f97316', world:'eastern', label:'Tabla (Na)' },
-  { name:'Tabla-Ge', color:'#ea580c', world:'eastern', label:'Tabla (Ge)' },
-  { name:'Dhol',     color:'#ef4444', world:'eastern', label:'Dhol Bass' },
-  { name:'Dhol-Hi',  color:'#f87171', world:'eastern', label:'Dhol Treble' },
-  { name:'Dholak',   color:'#14b8a6', world:'eastern', label:'Dholak' },
-  { name:'Sitar',    color:'#a855f7', world:'eastern', label:'Sitar' },
-  { name:'Bansuri',  color:'#22d3ee', world:'eastern', label:'Bansuri' },
-  { name:'Mridangam',color:'#84cc16', world:'eastern', label:'Mridangam R' },
-  { name:'Mridangam-B',color:'#65a30d',world:'eastern',label:'Mridangam L' },
-  { name:'Sarangi',  color:'#f472b6', world:'eastern', label:'Sarangi' },
-  { name:'Tanpura',  color:'#818cf8', world:'eastern', label:'Tanpura' },
+  {name:'Kick',      color:'#e8521a', world:'western', label:'Kick',      play:(t,ac)=>playKick(t,ac)},
+  {name:'Snare',     color:'#f59e0b', world:'western', label:'Snare',     play:(t,ac)=>playSnare(t,ac)},
+  {name:'Hi-Hat',    color:'#10b981', world:'western', label:'Hi-Hat',    play:(t,ac)=>playHihat(t,false,ac)},
+  {name:'Open-Hat',  color:'#059669', world:'western', label:'Open Hat',  play:(t,ac)=>playHihat(t,true,ac)},
+  {name:'808 Bass',  color:'#6366f1', world:'western', label:'808 Bass',  play:(t,ac)=>play808(t,ac)},
+  {name:'Guitar',    color:'#dc2626', world:'western', label:'E.Guitar',  play:(t,ac)=>playGuitar(t,ac)},
+  {name:'Piano',     color:'#0ea5e9', world:'western', label:'Piano',     play:(t,ac)=>playPiano(t,ac)},
+  {name:'Trumpet',   color:'#d97706', world:'western', label:'Trumpet',   play:(t,ac)=>playTrumpet(t,ac)},
+  {name:'Strings',   color:'#7c3aed', world:'western', label:'Strings',   play:(t,ac)=>playStrings(t,ac)},
+  {name:'Synth',     color:'#ec4899', world:'western', label:'Synth',     play:(t,ac)=>playSynth(t,ac)},
+  {name:'Tabla-Na',  color:'#f97316', world:'eastern', label:'Tabla(Na)', play:(t,ac)=>playTabla(t,'na',ac)},
+  {name:'Tabla-Ge',  color:'#ea580c', world:'eastern', label:'Tabla(Ge)', play:(t,ac)=>playTabla(t,'ge',ac)},
+  {name:'Dhol',      color:'#ef4444', world:'eastern', label:'Dhol Bass', play:(t,ac)=>playDhol(t,'bass',ac)},
+  {name:'Dhol-Hi',   color:'#f87171', world:'eastern', label:'Dhol High', play:(t,ac)=>playDhol(t,'treble',ac)},
+  {name:'Dholak',    color:'#14b8a6', world:'eastern', label:'Dholak',    play:(t,ac)=>playDholak(t,ac)},
+  {name:'Sitar',     color:'#a855f7', world:'eastern', label:'Sitar',     play:(t,ac)=>playSitar(t,ac)},
+  {name:'Bansuri',   color:'#22d3ee', world:'eastern', label:'Bansuri',   play:(t,ac)=>playBansuri(t,ac)},
+  {name:'Mridangam', color:'#84cc16', world:'eastern', label:'Mridag.R',  play:(t,ac)=>playMridangam(t,'valanthalai',ac)},
+  {name:'Mridangam-B',color:'#65a30d',world:'eastern', label:'Mridag.L', play:(t,ac)=>playMridangam(t,'thoppi',ac)},
+  {name:'Sarangi',   color:'#f472b6', world:'eastern', label:'Sarangi',   play:(t,ac)=>playSarangi(t,ac)},
+  {name:'Tanpura',   color:'#818cf8', world:'eastern', label:'Tanpura',   play:(t,ac)=>playTanpura(t,ac)},
 ];
 
-// ── GENRE PRESETS ──
 function emptyGrid() {
-  const g = {};
-  TRACKS.forEach(t => g[t.name] = Array(16).fill(false));
-  return g;
+  const g={}; TRACKS.forEach(t=>g[t.name]=Array(16).fill(false)); return g;
 }
 
-const GENRES = {
+// ── GENRE × MOOD DEFINITIONS ──
+// Each genre has a base pattern + mood variations that tweak density/BPM
+const GENRE_MOODS = {
   rock: {
-    name:'Rock', icon:'🤘', bpm:140, world:'western',
-    desc:'Heavy drums, overdriven guitar, powerful bass lines',
-    grid: (() => { const g=emptyGrid();
-      g['Kick']    = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
-      g['Snare']   = [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0];
-      g['Hi-Hat']  = [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0];
-      g['Open-Hat']= [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1];
-      g['Guitar']  = [1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0];
-      g['808 Bass']= [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0];
-      return g; })()
+    name:'Rock', icon:'🤘', world:'western', desc:'Heavy drums, distorted guitar, powerful bass',
+    moods: {
+      angry: {
+        emoji:'😡', name:'Angry Rock', desc:'Maximum aggression — dense kick, snare on every beat, overdriven', bpm:155,
+        tweak: g => { g['Kick']=[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]; g['Snare']=[0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0]; g['Hi-Hat']=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]; g['Guitar']=[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]; g['808 Bass']=[1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1]; }
+      },
+      excited: {
+        emoji:'🤩', name:'Excited Rock', desc:'Energetic and fun — faster tempo, driving rhythm', bpm:140,
+        tweak: g => { g['Kick']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; g['Snare']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; g['Hi-Hat']=[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1]; g['Open-Hat']=[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1]; g['Guitar']=[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0]; g['808 Bass']=[1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0]; }
+      }
+    }
   },
   jazz: {
-    name:'Jazz', icon:'🎷', bpm:100, world:'western',
-    desc:'Swinging ride, brushed snare, walking bass, trumpet melody',
-    grid: (() => { const g=emptyGrid();
-      g['Hi-Hat']  = [1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0]; // swing pattern
-      g['Snare']   = [0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,1];
-      g['Kick']    = [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0];
-      g['808 Bass']= [1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0];
-      g['Piano']   = [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
-      g['Trumpet'] = [0,0,1,0,0,0,0,1,0,0,1,0,0,0,1,0];
-      return g; })()
+    name:'Jazz', icon:'🎷', world:'western', desc:'Swinging rhythms, trumpet melody, brushed snare',
+    moods: {
+      calm: {
+        emoji:'😌', name:'Calm Jazz', desc:'Sparse swing, soft brushes, late night lounge feel', bpm:80,
+        tweak: g => { g['Hi-Hat']=[1,0,1,0,0,1,0,0,1,0,1,0,0,1,0,0]; g['Snare']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; g['Kick']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['808 Bass']=[1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0]; g['Piano']=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0]; g['Trumpet']=[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0]; }
+      },
+      romantic: {
+        emoji:'❤️', name:'Romantic Jazz', desc:'Warm ballad, piano lead, strings swell, gentle brushes', bpm:72,
+        tweak: g => { g['Hi-Hat']=[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]; g['Snare']=[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]; g['Kick']=[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; g['808 Bass']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; g['Piano']=[1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1]; g['Strings']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['Trumpet']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; }
+      },
+      melancholic: {
+        emoji:'🌧️', name:'Melancholic Jazz', desc:'Slow minor swing, brooding trumpet, sparse piano', bpm:65,
+        tweak: g => { g['Hi-Hat']=[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0]; g['Snare']=[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0]; g['Kick']=[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; g['808 Bass']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['Piano']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; g['Trumpet']=[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; }
+      }
+    }
   },
   hiphop: {
-    name:'Hip-Hop', icon:'🎤', bpm:90, world:'western',
-    desc:'Booming 808, crisp snare on 2&4, chopped hi-hats',
-    grid: (() => { const g=emptyGrid();
-      g['Kick']    = [1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0];
-      g['Snare']   = [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0];
-      g['Hi-Hat']  = [1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0];
-      g['Open-Hat']= [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
-      g['808 Bass']= [1,0,0,0,1,0,0,0,0,1,0,0,1,0,0,0];
-      g['Synth']   = [0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0];
-      return g; })()
+    name:'Hip-Hop', icon:'🎤', world:'western', desc:'Booming 808, crisp snare, sampled hi-hats',
+    moods: {
+      angry: {
+        emoji:'😡', name:'Angry Hip-Hop', desc:'Trap-style — rattling hi-hats, punching 808, hard snare', bpm:140,
+        tweak: g => { g['Kick']=[1,0,0,0,0,1,0,0,1,0,0,0,0,1,0,0]; g['Snare']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1]; g['Hi-Hat']=[1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0]; g['808 Bass']=[1,0,0,0,1,0,0,0,0,1,0,0,1,0,0,0]; }
+      },
+      happy: {
+        emoji:'😊', name:'Happy Hip-Hop', desc:'Bouncy old-school feel, funky piano, uplifting', bpm:95,
+        tweak: g => { g['Kick']=[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0]; g['Snare']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; g['Hi-Hat']=[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]; g['808 Bass']=[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0]; g['Piano']=[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0]; }
+      },
+      excited: {
+        emoji:'🤩', name:'Excited Hip-Hop', desc:'High energy — fast hi-hats, layered 808, synth stabs', bpm:110,
+        tweak: g => { g['Kick']=[1,0,0,0,1,0,0,1,0,0,1,0,0,0,1,0]; g['Snare']=[0,0,0,0,1,0,0,0,0,0,0,1,1,0,0,0]; g['Hi-Hat']=[1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1]; g['808 Bass']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; g['Synth']=[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0]; }
+      }
+    }
   },
   edm: {
-    name:'EDM', icon:'🎛️', bpm:128, world:'western',
-    desc:'Four-on-the-floor kick, synth arpeggio, strings swell',
-    grid: (() => { const g=emptyGrid();
-      g['Kick']    = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
-      g['Snare']   = [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0];
-      g['Hi-Hat']  = [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0];
-      g['Open-Hat']= [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
-      g['Synth']   = [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0];
-      g['Strings'] = [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0];
-      g['808 Bass']= [1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0];
-      return g; })()
+    name:'EDM', icon:'🎛️', world:'western', desc:'Four-on-the-floor kick, synth lead, arpeggios',
+    moods: {
+      happy: {
+        emoji:'😊', name:'Happy EDM', desc:'Uplifting melodic house — bright synth, steady groove', bpm:124,
+        tweak: g => { g['Kick']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; g['Snare']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; g['Hi-Hat']=[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]; g['Synth']=[1,0,1,0,1,0,0,1,0,1,0,1,1,0,1,0]; g['Strings']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['808 Bass']=[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0]; }
+      },
+      excited: {
+        emoji:'🤩', name:'Excited EDM', desc:'Peak hour — massive drop, layered synths, relentless kick', bpm:135,
+        tweak: g => { g['Kick']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; g['Snare']=[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,1]; g['Hi-Hat']=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]; g['Open-Hat']=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]; g['Synth']=[1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0]; g['808 Bass']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; }
+      },
+      festive: {
+        emoji:'🎉', name:'Festival EDM', desc:'Anthem drops, crowd-pleasing strings swell, euphoric build', bpm:128,
+        tweak: g => { g['Kick']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; g['Snare']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; g['Hi-Hat']=[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1]; g['Synth']=[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]; g['Strings']=[1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]; g['808 Bass']=[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0]; g['Trumpet']=[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; }
+      }
+    }
   },
   bollywood: {
-    name:'Bollywood', icon:'🎬', bpm:110, world:'eastern',
-    desc:'Tabla groove, Sitar melody, Dholak rhythm, filmi energy',
-    grid: (() => { const g=emptyGrid();
-      g['Tabla-Na']  = [1,0,1,0,0,1,0,1,1,0,1,0,0,1,0,1];
-      g['Tabla-Ge']  = [1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0];
-      g['Dholak']    = [1,0,0,0,1,0,0,1,1,0,0,0,1,0,0,1];
-      g['Sitar']     = [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0];
-      g['Bansuri']   = [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0];
-      g['Strings']   = [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0];
-      return g; })()
+    name:'Bollywood', icon:'🎬', world:'eastern', desc:'Filmi beats, Tabla groove, Sitar melody',
+    moods: {
+      happy: {
+        emoji:'😊', name:'Happy Bollywood', desc:'Classic dance number — fast Tabla, Sitar hook, Dholak rhythm', bpm:118,
+        tweak: g => { g['Tabla-Na']=[1,0,1,0,0,1,0,1,1,0,1,0,0,1,0,1]; g['Tabla-Ge']=[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0]; g['Dholak']=[1,0,0,0,1,0,0,1,1,0,0,0,1,0,0,1]; g['Sitar']=[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0]; g['Bansuri']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; g['Strings']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; }
+      },
+      festive: {
+        emoji:'🎉', name:'Festive Bollywood', desc:'Shaadi vibes — Dhol, Tabla together, high energy', bpm:130,
+        tweak: g => { g['Tabla-Na']=[1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0]; g['Tabla-Ge']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; g['Dhol']=[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0]; g['Dhol-Hi']=[0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0]; g['Dholak']=[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]; g['Sitar']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; }
+      },
+      romantic: {
+        emoji:'❤️', name:'Romantic Bollywood', desc:'Slow love ballad — Sitar, Sarangi, soft Tabla', bpm:80,
+        tweak: g => { g['Tabla-Na']=[1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0]; g['Tabla-Ge']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['Sitar']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0]; g['Sarangi']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; g['Strings']=[1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]; g['Bansuri']=[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; }
+      }
+    }
   },
   hindustani: {
-    name:'Hindustani', icon:'🪔', bpm:60, world:'eastern',
-    desc:'Slow Vilambit taal, Tanpura drone, Sitar alap phrases',
-    grid: (() => { const g=emptyGrid();
-      g['Tabla-Na']   = [1,0,0,0,0,1,0,0,0,0,0,1,0,0,1,0];
-      g['Tabla-Ge']   = [1,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0];
-      g['Tanpura']    = [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; // sparse — drones
-      g['Sitar']      = [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0];
-      g['Sarangi']    = [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0];
-      return g; })()
+    name:'Hindustani', icon:'🪔', world:'eastern', desc:'Raga-inspired, slow Tabla taal, Tanpura drone',
+    moods: {
+      calm: {
+        emoji:'😌', name:'Calm Hindustani', desc:'Vilambit laya — slow peaceful Tabla, steady Tanpura drone', bpm:55,
+        tweak: g => { g['Tabla-Na']=[1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0]; g['Tabla-Ge']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['Tanpura']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['Sitar']=[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; g['Sarangi']=[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]; }
+      },
+      melancholic: {
+        emoji:'🌧️', name:'Melancholic Hindustani', desc:'Evening raga — Bhairavi-style, longing Sarangi, sparse Tabla', bpm:50,
+        tweak: g => { g['Tabla-Na']=[1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0]; g['Tabla-Ge']=[1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]; g['Tanpura']=[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; g['Sarangi']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; g['Bansuri']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; }
+      },
+      romantic: {
+        emoji:'❤️', name:'Romantic Hindustani', desc:'Yaman raga mood — Sitar, Tanpura, gentle Tabla', bpm:65,
+        tweak: g => { g['Tabla-Na']=[1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0]; g['Tabla-Ge']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['Tanpura']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['Sitar']=[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0]; g['Sarangi']=[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0]; }
+      }
+    }
   },
   carnatic: {
-    name:'Carnatic', icon:'🌺', bpm:120, world:'eastern',
-    desc:'Adi talam Mridangam, fast Bansuri gamakam, Sarangi support',
-    grid: (() => { const g=emptyGrid();
-      g['Mridangam']  = [1,0,1,0,1,1,0,1,0,1,0,1,1,0,1,0];
-      g['Mridangam-B']= [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
-      g['Bansuri']    = [1,0,1,0,0,1,0,1,1,0,1,0,0,1,0,1];
-      g['Sarangi']    = [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0];
-      g['Tanpura']    = [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-      return g; })()
+    name:'Carnatic', icon:'🌺', world:'eastern', desc:'South Indian Mridangam, fast Bansuri phrases',
+    moods: {
+      excited: {
+        emoji:'🤩', name:'Excited Carnatic', desc:'Madhyama kala — medium fast, energetic Mridangam', bpm:125,
+        tweak: g => { g['Mridangam']=[1,0,1,0,1,1,0,1,0,1,0,1,1,0,1,0]; g['Mridangam-B']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; g['Bansuri']=[1,0,1,0,0,1,0,1,1,0,1,0,0,1,0,1]; g['Sarangi']=[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0]; g['Tanpura']=[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; }
+      },
+      happy: {
+        emoji:'😊', name:'Happy Carnatic', desc:'Chapu talam — cheerful, syncopated Mridangam patterns', bpm:112,
+        tweak: g => { g['Mridangam']=[1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0]; g['Mridangam-B']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; g['Bansuri']=[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0]; g['Sarangi']=[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]; g['Tanpura']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; }
+      },
+      festive: {
+        emoji:'🎉', name:'Festive Carnatic', desc:'Tisra nadai — triplet feel, temple festival energy', bpm:140,
+        tweak: g => { g['Mridangam']=[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1]; g['Mridangam-B']=[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0]; g['Bansuri']=[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0]; g['Dholak']=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]; g['Tanpura']=[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; }
+      }
+    }
   },
   sufi: {
-    name:'Sufi/Folk', icon:'🌙', bpm:75, world:'eastern',
-    desc:'Meditative Dhol, soulful Sarangi, Bansuri call and response',
-    grid: (() => { const g=emptyGrid();
-      g['Dhol']     = [1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0];
-      g['Dhol-Hi']  = [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0];
-      g['Dholak']   = [1,0,0,0,1,0,0,1,0,0,1,0,0,1,0,0];
-      g['Bansuri']  = [1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0];
-      g['Sarangi']  = [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0];
-      g['Tanpura']  = [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-      return g; })()
-  },
+    name:'Sufi/Folk', icon:'🌙', world:'eastern', desc:'Meditative Dhol, soulful Sarangi, Bansuri call',
+    moods: {
+      sad: {
+        emoji:'😢', name:'Sad Sufi', desc:'Slow devotional — Bansuri lament, Sarangi weeps, sparse Dhol', bpm:60,
+        tweak: g => { g['Dhol']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['Bansuri']=[1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]; g['Sarangi']=[0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0]; g['Tanpura']=[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; }
+      },
+      calm: {
+        emoji:'😌', name:'Calm Sufi', desc:'Meditative qawwali pulse — steady Dholak, Bansuri breathing', bpm:72,
+        tweak: g => { g['Dhol']=[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0]; g['Dhol-Hi']=[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]; g['Dholak']=[1,0,0,0,1,0,0,1,0,0,1,0,0,1,0,0]; g['Bansuri']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0]; g['Sarangi']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; g['Tanpura']=[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; }
+      },
+      melancholic: {
+        emoji:'🌧️', name:'Melancholic Sufi', desc:'Night-time kafi — longing Sarangi, echo Bansuri, Tanpura drone', bpm:55,
+        tweak: g => { g['Dhol']=[1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]; g['Bansuri']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['Sarangi']=[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0]; g['Tanpura']=[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]; g['Dholak']=[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]; }
+      }
+    }
+  }
 };
 
-// ── SEQUENCER STATE ──
+// ── STATE ──
 const STEPS = 16;
 let bpm = 120;
 let isPlaying = false;
 let currentStep = 0;
 let intervalId = null;
 let grid = emptyGrid();
-let currentGenre = null;
+let currentGenreKey = null;
+let currentMoodKey = null;
 let currentWorld = 'western';
 let savedPatterns = [];
-try { savedPatterns = JSON.parse(localStorage.getItem('bf4_patterns') || '[]'); } catch(e) {}
+let activeMoodFilter = 'all';
+let pendingGenre = null;
+let pendingMoodSelected = null;
+try { savedPatterns = JSON.parse(localStorage.getItem('bf5_patterns') || '[]'); } catch(e) {}
 
-// ── Genre Selector UI ──
+// ── Mood Filter ──
+function filterByMood(mood, btn) {
+  activeMoodFilter = mood;
+  document.querySelectorAll('.mood-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.genre-card').forEach(card => {
+    const moods = card.dataset.moods || '';
+    if (mood === 'all' || moods.split(',').includes(mood)) {
+      card.classList.remove('dimmed');
+    } else {
+      card.classList.add('dimmed');
+    }
+  });
+}
+
 function switchWorld(world, btn) {
   document.querySelectorAll('.genre-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -611,50 +537,122 @@ function switchWorld(world, btn) {
   document.getElementById('easternGenres').style.display = world === 'eastern' ? 'grid' : 'none';
 }
 
-function selectGenre(key) {
-  const genre = GENRES[key];
+// ── Open Mood Picker Modal ──
+function openGenreMoodPicker(genreKey) {
+  const genre = GENRE_MOODS[genreKey];
   if (!genre) return;
-  currentGenre = key;
+  pendingGenre = genreKey;
+  pendingMoodSelected = null;
 
+  document.getElementById('modalGenreIcon').textContent = genre.icon;
+  document.getElementById('modalGenreName').textContent = genre.name;
+  document.getElementById('modalGenreDesc').textContent = genre.desc;
+
+  const container = document.getElementById('modalMoodOptions');
+  container.innerHTML = '';
+
+  // Pre-select mood if filter is active
+  const preselect = activeMoodFilter !== 'all' && genre.moods[activeMoodFilter] ? activeMoodFilter : null;
+
+  Object.entries(genre.moods).forEach(([moodKey, mood]) => {
+    const btn = document.createElement('button');
+    btn.className = 'modal-mood-btn' + (preselect === moodKey ? ' selected' : '');
+    btn.innerHTML = `
+      <span class="mmb-emoji">${mood.emoji}</span>
+      <div class="mmb-info">
+        <div class="mmb-name">${mood.name}</div>
+        <div class="mmb-desc">${mood.desc}</div>
+      </div>
+      <span class="mmb-bpm">${mood.bpm} BPM</span>
+    `;
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.modal-mood-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      pendingMoodSelected = moodKey;
+    });
+    container.appendChild(btn);
+  });
+
+  if (preselect) pendingMoodSelected = preselect;
+
+  // Load button
+  const loadBtn = document.createElement('button');
+  loadBtn.className = 'modal-load-btn';
+  loadBtn.textContent = 'Load This Beat →';
+  loadBtn.addEventListener('click', () => {
+    if (!pendingMoodSelected) {
+      // auto-select first
+      const first = Object.keys(genre.moods)[0];
+      pendingMoodSelected = first;
+    }
+    loadGenreMood(pendingGenre, pendingMoodSelected);
+    document.getElementById('moodModal').style.display = 'none';
+  });
+  container.appendChild(loadBtn);
+
+  document.getElementById('moodModal').style.display = 'flex';
+}
+
+function closeMoodModal(e) {
+  if (e.target === document.getElementById('moodModal')) {
+    document.getElementById('moodModal').style.display = 'none';
+  }
+}
+
+// ── Load Genre + Mood ──
+function loadGenreMood(genreKey, moodKey) {
+  const genre = GENRE_MOODS[genreKey];
+  const mood = genre.moods[moodKey];
+  if (!genre || !mood) return;
+
+  currentGenreKey = genreKey;
+  currentMoodKey = moodKey;
+
+  // Build grid from mood tweak
+  grid = emptyGrid();
+  mood.tweak(grid);
+
+  document.getElementById('bpm').value = mood.bpm;
+  bpm = mood.bpm;
+
+  // Highlight genre card
   document.querySelectorAll('.genre-card').forEach(c => c.classList.remove('selected'));
-  const card = document.querySelector(`.genre-card[data-genre="${key}"]`);
+  const card = document.querySelector(`.genre-card[data-genre="${genreKey}"]`);
   if (card) card.classList.add('selected');
-
-  document.getElementById('bpm').value = genre.bpm;
-  bpm = genre.bpm;
-  grid = JSON.parse(JSON.stringify(genre.grid));
-  renderGrid(currentWorld === 'both' ? 'both' : genre.world);
 
   // Show banner
   const banner = document.getElementById('genreBanner');
-  document.getElementById('genreBannerIcon').textContent = genre.icon;
-  document.getElementById('genreBannerName').textContent = `${genre.name} loaded — ${genre.bpm} BPM`;
-  document.getElementById('genreBannerDesc').textContent = genre.desc;
+  document.getElementById('genreBannerIcon').textContent = genre.icon + ' ' + mood.emoji;
+  document.getElementById('genreBannerName').textContent = `${mood.name} loaded — ${mood.bpm} BPM`;
+  document.getElementById('genreBannerDesc').textContent = mood.desc;
   banner.style.display = 'flex';
 
   // Studio badge
   document.getElementById('activeGenreRow').style.display = 'flex';
-  const badge = document.getElementById('activeGenreBadge');
-  badge.textContent = `${genre.icon} ${genre.name}`;
-  document.getElementById('activeGenreDesc').textContent = genre.desc;
+  document.getElementById('activeGenreBadge').textContent = `${genre.icon} ${genre.name}`;
+  document.getElementById('activeMoodBadge').textContent = `${mood.emoji} ${mood.name.split(' ')[0]}`;
+  document.getElementById('activeGenreDesc').textContent = mood.desc;
 
-  document.getElementById('patternName').placeholder = `My ${genre.name} Beat`;
+  document.getElementById('patternName').placeholder = `My ${mood.name}`;
 
-  // Auto-switch world tab in studio
+  // Switch world tab
   const w = genre.world;
   document.querySelectorAll('.world-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(w === 'western' ? 'tabWestern' : 'tabEastern').classList.add('active');
   currentWorld = w;
 
+  renderGrid(currentWorld);
   if (isPlaying) restartPlayback();
-  setStatus('', `${genre.icon} ${genre.name} beat loaded!`);
+  setStatus('', `${genre.icon}${mood.emoji} ${mood.name} loaded!`);
+  document.getElementById('sequencer').scrollIntoView({ behavior: 'smooth' });
 }
 
 // ── Grid Render ──
 function showWorld(world) {
   currentWorld = world;
   document.querySelectorAll('.world-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById(world === 'western' ? 'tabWestern' : world === 'eastern' ? 'tabEastern' : 'tabBoth').classList.add('active');
+  const ids = { western: 'tabWestern', eastern: 'tabEastern', both: 'tabBoth' };
+  document.getElementById(ids[world]).classList.add('active');
   renderGrid(world);
 }
 
@@ -662,11 +660,9 @@ function renderGrid(world) {
   const w = world || currentWorld || 'western';
   const gridEl = document.getElementById('grid');
   gridEl.innerHTML = '';
-
   const sections = [];
   if (w === 'western' || w === 'both') sections.push({ label: '🎸 Western Instruments', tracks: TRACKS.filter(t => t.world === 'western') });
   if (w === 'eastern' || w === 'both') sections.push({ label: '🪘 Eastern Instruments', tracks: TRACKS.filter(t => t.world === 'eastern') });
-
   sections.forEach(sec => {
     const section = document.createElement('div');
     section.className = 'track-section';
@@ -674,23 +670,17 @@ function renderGrid(world) {
     hdr.className = 'track-section-header';
     hdr.textContent = sec.label;
     section.appendChild(hdr);
-
     sec.tracks.forEach(track => {
-      const row = document.createElement('div');
-      row.className = 'track-row';
-      const label = document.createElement('span');
-      label.className = 'track-label';
-      label.textContent = track.label;
-      label.style.borderLeft = `3px solid ${track.color}`;
+      const row = document.createElement('div'); row.className = 'track-row';
+      const label = document.createElement('span'); label.className = 'track-label';
+      label.textContent = track.label; label.style.borderLeft = `3px solid ${track.color}`;
       row.appendChild(label);
-      const stepsRow = document.createElement('div');
-      stepsRow.className = 'steps-row';
+      const stepsRow = document.createElement('div'); stepsRow.className = 'steps-row';
       for (let i = 0; i < STEPS; i++) {
         const btn = document.createElement('button');
         const active = grid[track.name] && grid[track.name][i];
         btn.className = 'step-btn' + (active ? ' active' : '');
-        btn.dataset.track = track.name;
-        btn.dataset.step = i;
+        btn.dataset.track = track.name; btn.dataset.step = i;
         if (active) btn.style.background = track.color;
         btn.addEventListener('click', () => {
           if (!grid[track.name]) grid[track.name] = Array(STEPS).fill(false);
@@ -700,31 +690,25 @@ function renderGrid(world) {
         });
         stepsRow.appendChild(btn);
       }
-      row.appendChild(stepsRow);
-      section.appendChild(row);
+      row.appendChild(stepsRow); section.appendChild(row);
     });
     gridEl.appendChild(section);
   });
 }
 
-// ── Tick ──
+// ── Playback ──
 function tick() {
   document.querySelectorAll('.step-btn').forEach(btn => {
     btn.classList.toggle('current', parseInt(btn.dataset.step) === currentStep);
   });
   TRACKS.forEach(track => {
-    if (grid[track.name] && grid[track.name][currentStep]) {
-      const fn = INSTRUMENTS[track.name];
-      if (fn) fn(audioCtx.currentTime);
-    }
+    if (grid[track.name] && grid[track.name][currentStep]) track.play(audioCtx.currentTime);
   });
   currentStep = (currentStep + 1) % STEPS;
 }
-
 function getInterval() { return (60 / bpm / 4) * 1000; }
 function restartPlayback() { clearInterval(intervalId); bpm = parseInt(document.getElementById('bpm').value) || 120; intervalId = setInterval(tick, getInterval()); }
 
-// ── Controls ──
 document.getElementById('playBtn').addEventListener('click', () => {
   if (isPlaying) return;
   audioCtx.resume(); isPlaying = true;
@@ -733,7 +717,6 @@ document.getElementById('playBtn').addEventListener('click', () => {
   document.getElementById('playBtn').classList.add('active');
   setStatus('playing', '▶ Playing');
 });
-
 document.getElementById('stopBtn').addEventListener('click', () => {
   if (!isPlaying) return;
   isPlaying = false; clearInterval(intervalId); currentStep = 0;
@@ -741,70 +724,67 @@ document.getElementById('stopBtn').addEventListener('click', () => {
   document.getElementById('playBtn').classList.remove('active');
   setStatus('', 'Stopped');
 });
-
 document.getElementById('clearBtn').addEventListener('click', () => {
   grid = emptyGrid();
-  document.querySelectorAll('.step-btn').forEach(b => { b.classList.remove('active', 'current'); b.style.background = ''; });
+  document.querySelectorAll('.step-btn').forEach(b => { b.classList.remove('active','current'); b.style.background=''; });
   setStatus('', 'Grid cleared');
 });
-
-document.getElementById('bpmUp').addEventListener('click', () => {
-  const i = document.getElementById('bpm'); i.value = Math.min(240, parseInt(i.value) + 5); if (isPlaying) restartPlayback();
-});
-document.getElementById('bpmDown').addEventListener('click', () => {
-  const i = document.getElementById('bpm'); i.value = Math.max(40, parseInt(i.value) - 5); if (isPlaying) restartPlayback();
-});
-document.getElementById('bpm').addEventListener('change', () => { if (isPlaying) restartPlayback(); });
+document.getElementById('bpmUp').addEventListener('click', () => { const i=document.getElementById('bpm'); i.value=Math.min(240,parseInt(i.value)+5); if(isPlaying)restartPlayback(); });
+document.getElementById('bpmDown').addEventListener('click', () => { const i=document.getElementById('bpm'); i.value=Math.max(40,parseInt(i.value)-5); if(isPlaying)restartPlayback(); });
+document.getElementById('bpm').addEventListener('change', () => { if(isPlaying) restartPlayback(); });
 
 // ── Save ──
 document.getElementById('saveBtn').addEventListener('click', () => {
-  const genre = currentGenre ? GENRES[currentGenre] : null;
-  const name = document.getElementById('patternName').value.trim() || (genre ? `My ${genre.name} Beat` : 'Pattern ' + (savedPatterns.length + 1));
+  const genre = currentGenreKey ? GENRE_MOODS[currentGenreKey] : null;
+  const mood = (genre && currentMoodKey) ? genre.moods[currentMoodKey] : null;
+  const name = document.getElementById('patternName').value.trim() || (mood ? `My ${mood.name}` : 'Pattern '+(savedPatterns.length+1));
   const pattern = {
     id: Date.now(), name,
     bpm: parseInt(document.getElementById('bpm').value),
-    genre: currentGenre,
-    genreIcon: genre ? genre.icon : null,
-    genreName: genre ? genre.name : null,
+    genre: currentGenreKey, genreIcon: genre?.icon, genreName: genre?.name,
+    mood: currentMoodKey, moodEmoji: mood?.emoji, moodName: mood?.name,
     grid: JSON.parse(JSON.stringify(grid)),
     createdAt: new Date().toLocaleString()
   };
   savedPatterns.unshift(pattern);
-  try { localStorage.setItem('bf4_patterns', JSON.stringify(savedPatterns)); } catch(e) {}
+  try { localStorage.setItem('bf5_patterns', JSON.stringify(savedPatterns)); } catch(e) {}
   renderPatternLibrary();
   document.getElementById('patternName').value = '';
   setStatus('saved', `💾 "${name}" saved!`);
 });
 
-// ── Load ──
 function loadPattern(pattern) {
   document.getElementById('bpm').value = pattern.bpm; bpm = pattern.bpm;
   grid = pattern.grid || emptyGrid();
-  if (pattern.genre) { currentGenre = pattern.genre; }
+  currentGenreKey = pattern.genre || null;
+  currentMoodKey = pattern.mood || null;
   renderGrid(currentWorld);
   if (isPlaying) restartPlayback();
+  if (pattern.genreIcon) {
+    document.getElementById('activeGenreRow').style.display = 'flex';
+    document.getElementById('activeGenreBadge').textContent = `${pattern.genreIcon} ${pattern.genreName}`;
+    document.getElementById('activeMoodBadge').textContent = pattern.moodEmoji ? `${pattern.moodEmoji} ${pattern.moodName?.split(' ')[0]}` : '';
+    document.getElementById('activeGenreDesc').textContent = '';
+  }
   setStatus('', `📂 Loaded "${pattern.name}"`);
   document.getElementById('sequencer').scrollIntoView({ behavior: 'smooth' });
 }
-
 function deletePattern(id) {
   savedPatterns = savedPatterns.filter(p => p.id !== id);
-  try { localStorage.setItem('bf4_patterns', JSON.stringify(savedPatterns)); } catch(e) {}
+  try { localStorage.setItem('bf5_patterns', JSON.stringify(savedPatterns)); } catch(e) {}
   renderPatternLibrary();
 }
-
 function renderPatternLibrary() {
   const list = document.getElementById('patternList');
-  if (!savedPatterns.length) {
-    list.innerHTML = '<div class="no-patterns">No saved patterns yet. Pick a genre and save your beat!</div>'; return;
-  }
+  if (!savedPatterns.length) { list.innerHTML = '<div class="no-patterns">No saved patterns yet. Pick a genre + mood and save your beat!</div>'; return; }
   list.innerHTML = savedPatterns.map(p => `
     <div class="pattern-card">
       <div class="pattern-info">
         <div class="pattern-name">${p.name}</div>
         <div class="pattern-meta">
           ${p.bpm} BPM · ${p.createdAt}
-          ${p.genreIcon ? `<span class="pattern-genre-tag">${p.genreIcon} ${p.genreName}</span>` : ''}
+          ${p.genreIcon ? `<span class="p-tag">${p.genreIcon} ${p.genreName}</span>` : ''}
+          ${p.moodEmoji ? `<span class="p-tag">${p.moodEmoji} ${p.moodName}</span>` : ''}
         </div>
       </div>
       <div class="pattern-actions">
@@ -816,7 +796,6 @@ function renderPatternLibrary() {
   `).join('');
 }
 
-// ── Share ──
 function sharePattern(id) {
   const p = savedPatterns.find(p => p.id === id); if (!p) return;
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(p))));
@@ -826,8 +805,8 @@ function sharePattern(id) {
 }
 
 function loadFromURL() {
-  const encoded = new URLSearchParams(window.location.search).get('pattern');
-  if (encoded) { try { loadPattern(JSON.parse(decodeURIComponent(escape(atob(encoded))))); } catch(e) {} }
+  const enc = new URLSearchParams(window.location.search).get('pattern');
+  if (enc) { try { loadPattern(JSON.parse(decodeURIComponent(escape(atob(enc))))); } catch(e) {} }
 }
 
 // ── WAV Download ──
@@ -837,74 +816,35 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
   const loops = 4;
   const totalDur = STEPS * loops * stepDur + 2;
   const offCtx = new OfflineAudioContext(2, Math.ceil(audioCtx.sampleRate * totalDur), audioCtx.sampleRate);
-
-  // Re-wire all instrument functions to use offCtx
-  const offInstruments = {};
-  Object.keys(INSTRUMENTS).forEach(name => {
-    offInstruments[name] = (t) => INSTRUMENTS[name](t, offCtx);
-  });
-  // Override destination routing for offline context
-  const origDest = audioCtx.destination;
-
   for (let step = 0; step < STEPS * loops; step++) {
-    const si = step % STEPS;
-    const t0 = step * stepDur;
+    const si = step % STEPS, t0 = step * stepDur;
     TRACKS.forEach(track => {
       if (grid[track.name] && grid[track.name][si]) {
-        try {
-          // Inline render for offline ctx
-          const fn = INSTRUMENTS[track.name];
-          if (fn) {
-            // call with offline context
-            const name = track.name;
-            if (name === 'Kick') playKick(t0, offCtx);
-            else if (name === 'Snare') playSnare(t0, offCtx);
-            else if (name === 'Hi-Hat') playHihat(t0, false, offCtx);
-            else if (name === 'Open-Hat') playHihat(t0, true, offCtx);
-            else if (name === '808 Bass') playBass808(t0, 55, offCtx);
-            else if (name === 'Synth') playSynth(t0, 440, offCtx);
-            else if (name === 'Guitar') playElectricGuitar(t0, 196, offCtx);
-            else if (name === 'Piano') playPiano(t0, 261.63, offCtx);
-            else if (name === 'Trumpet') playTrumpet(t0, 329.63, offCtx);
-            else if (name === 'Strings') playStrings(t0, 196, offCtx);
-            else if (name === 'Tabla-Na') playTabla(t0, 'na', offCtx);
-            else if (name === 'Tabla-Ge') playTabla(t0, 'ge', offCtx);
-            else if (name === 'Dhol') playDhol(t0, 'bass', offCtx);
-            else if (name === 'Dhol-Hi') playDhol(t0, 'treble', offCtx);
-            else if (name === 'Dholak') playDholak(t0, offCtx);
-            else if (name === 'Sitar') playSitar(t0, 196, offCtx);
-            else if (name === 'Bansuri') playBansuri(t0, 523, offCtx);
-            else if (name === 'Mridangam') playMridangam(t0, 'valanthalai', offCtx);
-            else if (name === 'Mridangam-B') playMridangam(t0, 'thoppi', offCtx);
-            else if (name === 'Sarangi') playSarangi(t0, 261, offCtx);
-            else if (name === 'Tanpura') playTanpura(t0, 'mid', offCtx);
-          }
-        } catch(e) {}
+        try { track.play(t0, offCtx); } catch(e) {}
       }
     });
   }
-
   const buf = await offCtx.startRendering();
   const wav = encodeWav(buf);
   const blob = new Blob([wav], { type: 'audio/wav' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'beatforge-beat.wav'; a.click();
+  const a = document.createElement('a'); a.href = url; a.download = `beatforge-${currentGenreKey||'beat'}-${currentMoodKey||'custom'}.wav`; a.click();
   URL.revokeObjectURL(url);
   setStatus('saved', '⬇️ WAV downloaded!');
 });
 
 function encodeWav(buf) {
-  const nc = buf.numberOfChannels, sr = buf.sampleRate, len = buf.length * nc * 2;
-  const ab = new ArrayBuffer(44 + len), v = new DataView(ab);
-  const ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
-  ws(0,'RIFF'); v.setUint32(4,36+len,true); ws(8,'WAVE'); ws(12,'fmt ');
-  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,nc,true);
-  v.setUint32(24,sr,true); v.setUint32(28,sr*nc*2,true); v.setUint16(32,nc*2,true); v.setUint16(34,16,true);
-  ws(36,'data'); v.setUint32(40,len,true);
-  let off = 44;
-  for (let i = 0; i < buf.length; i++) for (let c = 0; c < nc; c++) {
-    const s = Math.max(-1, Math.min(1, buf.getChannelData(c)[i]));
-    v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true); off += 2;
+  const nc=buf.numberOfChannels,sr=buf.sampleRate,len=buf.length*nc*2;
+  const ab=new ArrayBuffer(44+len),v=new DataView(ab);
+  const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  ws(0,'RIFF');v.setUint32(4,36+len,true);ws(8,'WAVE');ws(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nc,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*nc*2,true);v.setUint16(32,nc*2,true);v.setUint16(34,16,true);
+  ws(36,'data');v.setUint32(40,len,true);
+  let off=44;
+  for(let i=0;i<buf.length;i++) for(let c=0;c<nc;c++){
+    const s=Math.max(-1,Math.min(1,buf.getChannelData(c)[i]));
+    v.setInt16(off,s<0?s*0x8000:s*0x7FFF,true);off+=2;
   }
   return ab;
 }
@@ -914,8 +854,8 @@ function setStatus(type, text) {
   document.getElementById('statusText').textContent = text;
 }
 
-// ── Init ──
+// Init
 renderGrid('western');
 renderPatternLibrary();
 loadFromURL();
-setStatus('', 'Ready — pick a genre or build your own beat!');
+setStatus('', 'Ready — filter by mood, then pick a genre to start!');
