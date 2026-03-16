@@ -76,6 +76,14 @@
       <p>Filter by mood, then pick a genre. Each combination loads a unique beat.</p>
     </div>
 
+    <!-- Search Bar -->
+    <div class="search-bar-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="genreSearch" class="genre-search-input" placeholder="Search genre or mood... (e.g. Jazz, Calm, Tabla, Festive)" oninput="handleSearch(this.value)">
+      <button class="search-clear" id="searchClear" onclick="clearSearch()" style="display:none">✕</button>
+    </div>
+    <div id="searchResults" class="search-results" style="display:none"></div>
+
     <div class="mood-filter-bar">
       <span class="mood-filter-label">Filter by mood:</span>
       <div class="mood-filters">

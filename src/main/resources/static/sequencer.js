@@ -211,7 +211,123 @@ function showTooltip(trackName,el){
 function hideTooltip(){document.getElementById('instrTooltip').style.display='none';}
 document.addEventListener('click',e=>{if(!e.target.classList.contains('track-label'))hideTooltip();});
 
-// ── MOOD FILTER ──
+// ── SEARCH ──
+function handleSearch(query) {
+  const q = query.trim().toLowerCase();
+  const clearBtn = document.getElementById('searchClear');
+  const resultsBox = document.getElementById('searchResults');
+  clearBtn.style.display = q ? 'flex' : 'none';
+
+  if (!q) { resultsBox.style.display = 'none'; return; }
+
+  const results = [];
+
+  // Search genres
+  Object.entries(GENRE_MOODS).forEach(([genreKey, genre]) => {
+    const matchGenre = genre.name.toLowerCase().includes(q) ||
+      genre.desc.toLowerCase().includes(q) ||
+      genre.world.includes(q) ||
+      (genre.world === 'eastern' && ['eastern','indian','east'].some(k => q.includes(k))) ||
+      (genre.world === 'western' && ['western','west'].some(k => q.includes(k)));
+
+    if (matchGenre) {
+      results.push({
+        icon: genre.icon, name: genre.name,
+        meta: genre.world === 'western' ? '🎸 Western' : '🪘 Eastern',
+        type: 'genre', key: genreKey, moodKey: null,
+        desc: genre.desc
+      });
+    }
+
+    // Search moods within genres
+    Object.entries(genre.moods).forEach(([moodKey, mood]) => {
+      const matchMood = mood.name.toLowerCase().includes(q) ||
+        mood.desc.toLowerCase().includes(q) ||
+        moodKey.includes(q);
+      if (matchMood) {
+        results.push({
+          icon: mood.emoji, name: mood.name,
+          meta: `${genre.icon} ${genre.name} · ${mood.bpm} BPM`,
+          type: 'mood', key: genreKey, moodKey: moodKey,
+          desc: mood.desc
+        });
+      }
+    });
+  });
+
+  // Search instrument names
+  TRACKS.forEach(track => {
+    const info = INSTR_INFO[track.name];
+    if (track.label.toLowerCase().includes(q) ||
+        track.name.toLowerCase().includes(q) ||
+        (info && info.name.toLowerCase().includes(q)) ||
+        (info && info.origin.toLowerCase().includes(q))) {
+      results.push({
+        icon: track.world === 'western' ? '🎸' : '🪘',
+        name: info ? info.name : track.label,
+        meta: `${track.world === 'western' ? 'Western' : 'Eastern'} · ${info ? info.origin : ''}`,
+        type: 'instrument', key: track.name, moodKey: null,
+        desc: info ? info.desc : ''
+      });
+    }
+  });
+
+  if (!results.length) {
+    resultsBox.innerHTML = `<div class="search-results-title">Search results for "${query}"</div><div class="no-search-results">No genres, moods or instruments found. Try "Jazz", "Calm", "Tabla" or "Festive".</div>`;
+    resultsBox.style.display = 'block';
+    return;
+  }
+
+  const cards = results.slice(0, 12).map(r => `
+    <div class="search-result-card" onclick="handleSearchClick('${r.type}','${r.key}','${r.moodKey||''}')">
+      <span class="src-icon">${r.icon}</span>
+      <div class="src-info">
+        <div class="src-name">${r.name}</div>
+        <div class="src-meta">${r.meta}</div>
+      </div>
+      <span class="src-type">${r.type}</span>
+    </div>
+  `).join('');
+
+  resultsBox.innerHTML = `<div class="search-results-title">${results.length} result${results.length>1?'s':''} for "${query}"</div><div class="search-result-cards">${cards}</div>`;
+  resultsBox.style.display = 'block';
+}
+
+function handleSearchClick(type, key, moodKey) {
+  if (type === 'genre') {
+    // Switch to correct world tab
+    const genre = GENRE_MOODS[key];
+    if (genre) {
+      const isEastern = genre.world === 'eastern';
+      document.querySelectorAll('.genre-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.genre-tab')[isEastern ? 1 : 0].classList.add('active');
+      document.getElementById('westernGenres').style.display = isEastern ? 'none' : 'grid';
+      document.getElementById('easternGenres').style.display = isEastern ? 'grid' : 'none';
+      openGenreMoodPicker(key);
+    }
+  } else if (type === 'mood') {
+    loadGenreMood(key, moodKey);
+    clearSearch();
+  } else if (type === 'instrument') {
+    // Show instrument info tooltip and scroll to studio
+    const track = TRACKS.find(t => t.name === key);
+    if (track) {
+      const world = track.world;
+      showWorld(world);
+      document.getElementById('sequencer').scrollIntoView({ behavior: 'smooth' });
+      setStatus('', `💡 Showing ${track.label} — hover the track label for info`);
+    }
+    clearSearch();
+  }
+}
+
+function clearSearch() {
+  document.getElementById('genreSearch').value = '';
+  document.getElementById('searchClear').style.display = 'none';
+  document.getElementById('searchResults').style.display = 'none';
+}
+
+// ── SEARCH ──
 function filterByMood(mood,btn){
   activeMoodFilter=mood;
   document.querySelectorAll('.mood-filter-btn').forEach(b=>b.classList.remove('active'));
