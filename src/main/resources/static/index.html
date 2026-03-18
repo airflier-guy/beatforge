@@ -66,7 +66,7 @@
     <div class="feat-divider"></div>
     <div class="feature-item"><span class="feat-icon">📖</span><span>Learn Mode</span></div>
     <div class="feat-divider"></div>
-    <div class="feature-item"><span class="feat-icon">⬇️</span><span>WAV Download</span></div>
+    <div class="feature-item"><span class="feat-icon">⬇️</span><span>WAV — Any Duration</span></div>
   </section>
 
   <!-- GENRE SECTION -->
@@ -173,6 +173,18 @@
     </div>
   </section>
 
+  <!-- ARRANGEMENT MODAL -->
+  <div id="arrangementModal" class="modal-overlay" style="display:none" onclick="closeArrangementModal(event)">
+    <div class="modal-box" style="max-width:800px">
+      <div class="modal-header">
+        <div style="font-size:2rem">🌏</div>
+        <div><div style="font-family:var(--display);font-size:1.3rem;font-weight:800">Regional Styles — 3-Min Output</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">Pick a style to generate a full 3-minute structured WAV with Intro→Build→Drop→Outro</div></div>
+        <button class="modal-close" onclick="document.getElementById('arrangementModal').style.display='none'">✕</button>
+      </div>
+      <div id="arrangementGrid" class="arrangement-grid"></div>
+    </div>
+  </div>
+
   <!-- MOOD MODAL -->
   <div id="moodModal" class="modal-overlay" style="display:none" onclick="closeMoodModal(event)">
     <div class="modal-box">
@@ -218,6 +230,7 @@
           <button class="transport-btn play" id="playBtn">▶ Play</button>
           <button class="transport-btn stop" id="stopBtn">⏹ Stop</button>
           <button class="transport-btn learn" id="learnBtn" title="Learn this beat step by step">📖 Learn</button>
+          <button class="transport-btn regional" onclick="openArrangementPicker()" title="3-min regional output">🌏 Regional Styles</button>
         </div>
         <div class="transport-center">
           <div class="bpm-control">
@@ -228,7 +241,7 @@
           </div>
         </div>
         <div class="transport-right">
-          <button class="transport-btn download" id="downloadBtn">⬇️ WAV</button>
+          <button class="transport-btn download" id="downloadBtn">⬇️ WAV (Choose Duration)</button>
           <button class="transport-btn clear" id="clearBtn">✕ Clear</button>
         </div>
       </div>
