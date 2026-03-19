@@ -1285,4 +1285,4 @@ renderRegionGrid('world', 'africa');
 renderGrid('eastern');
 renderGallery();
 loadFromURL();
-setStatus('', 'Pick a region above to load an authentic beat with melodic patterns!');
+setStatus('', 'Pick a style above → load a beat → hit ▶ Play → then ⬇️ Download WAV to save it!');
