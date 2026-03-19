@@ -1085,72 +1085,182 @@ const lBtn=document.getElementById('learnBtn');if(lBtn)lBtn.addEventListener('cl
 document.getElementById('downloadBtn').addEventListener('click', async () => {
   const durationMins = Math.max(2, selectedDuration);
   const TARGET = durationMins * 60;
-  setStatus('', `⏳ Rendering ${durationMins.toFixed(1)}-minute WAV with melodic patterns...`);
+  const btn = document.getElementById('downloadBtn');
+  btn.textContent = '⏳ Rendering...'; btn.disabled = true;
+  setStatus('', `⏳ Rendering ${durationMins.toFixed(1)} min WAV — please wait...`);
 
-  const stepDur = 60 / bpm / 4;
-  const loopDur = STEPS * stepDur;
-  const totalLoops = Math.ceil(TARGET / loopDur);
-  const totalDur = TARGET + 3;
-  const offCtx = new OfflineAudioContext(2, Math.ceil(audioCtx.sampleRate * totalDur), audioCtx.sampleRate);
+  // Small delay so UI updates before heavy work
+  await new Promise(r => setTimeout(r, 80));
 
-  const regions = currentRegionType === 'indian' ? INDIAN_REGIONS : currentRegionType === 'world' ? WORLD_REGIONS : null;
-  const region = regions && currentRegionKey ? regions[currentRegionKey] : null;
-  const variation = region && currentVariation ? region.variations[currentVariation] : null;
-  const scale = region ? (SCALES[region.scale] || SCALES.pentatonic) : SCALES.pentatonic;
+  try {
+    const SR = 44100;
+    const stepDur = 60 / bpm / 4;
+    const loopDur = STEPS * stepDur;
+    const totalLoops = Math.ceil(TARGET / loopDur);
+    const totalSamples = Math.ceil(SR * (TARGET + 2));
 
-  for (let loop = 0; loop < totalLoops; loop++) {
-    const loopOffset = loop * loopDur;
-    if (loopOffset >= TARGET) break;
-    const variationLevel = Math.floor(loop / 4);
+    const offCtx = new OfflineAudioContext(2, totalSamples, SR);
 
-    for (let step = 0; step < STEPS; step++) {
-      const t0 = loopOffset + step * stepDur;
-      if (t0 >= TARGET) break;
+    // Master gain for offline
+    const masterOff = offCtx.createGain(); masterOff.gain.value = 0.85;
+    masterOff.connect(offCtx.destination);
 
-      TRACKS.forEach(track => {
-        if (!grid[track.name] || !grid[track.name][step]) return;
-        if ((trackVolumes[track.name] || 1) <= 0) return;
+    const regions = currentRegionType === 'indian' ? INDIAN_REGIONS : currentRegionType === 'world' ? WORLD_REGIONS : null;
+    const region = regions && currentRegionKey ? regions[currentRegionKey] : null;
+    const variation = region && currentVariation ? region.variations[currentVariation] : null;
+    const scale = region ? (SCALES[region.scale] || SCALES.pentatonic) : SCALES.pentatonic;
 
-        // Melodic instrument — play correct note from scale
-        if (variation && variation.melody && variation.melody.instr === track.name) {
-          const noteIdx = variation.melody.pattern[step];
-          if (noteIdx >= 0) {
-            const freq = scale[noteIdx % scale.length];
-            // Auto-variation: transpose up octave every 4 loops
-            const octaveShift = variationLevel >= 2 ? 2 : 1;
-            try { playMelodicInstrument(track.name, freq * octaveShift, t0, offCtx); } catch(e) {}
-            return;
-          }
-        }
-        // Add variation ghost notes
-        let active = true;
-        if (variationLevel >= 1 && step % 8 === 4 && ['Hi-Hat','Kanjira'].includes(track.name)) {
-          // Extra hi-hat on off-beat in later loops
-        }
-        try { track.play(t0, offCtx); } catch(e) {}
-      });
+    // Helper: play instrument into offline ctx routed through masterOff
+    function playOffline(trackName, stepIdx, t0) {
+      const track = TRACKS.find(t => t.name === trackName); if (!track) return;
+
+      // If melodic instrument with pattern
+      if (variation && variation.melody && variation.melody.instr === trackName) {
+        const noteIdx = variation.melody.pattern[stepIdx];
+        if (noteIdx >= 0) {
+          const freq = scale[noteIdx % scale.length];
+          playOfflineNote(trackName, freq, t0, offCtx, masterOff);
+          return;
+        } else return; // rest
+      }
+      // Percussion — simple approach: create a tiny buffer and play via track function
+      // We wrap dest() temporarily
+      playOfflinePerc(track, t0, offCtx, masterOff);
     }
+
+    for (let loop = 0; loop < totalLoops; loop++) {
+      const loopOffset = loop * loopDur;
+      if (loopOffset >= TARGET) break;
+      for (let step = 0; step < STEPS; step++) {
+        const t0 = loopOffset + step * stepDur;
+        if (t0 >= TARGET) break;
+        TRACKS.forEach(track => {
+          if (!grid[track.name] || !grid[track.name][step]) return;
+          try { playOffline(track.name, step, t0); } catch(e) {}
+        });
+      }
+    }
+
+    const buf = await offCtx.startRendering();
+
+    // Fade out last 3 seconds
+    const fadeStart = Math.floor((TARGET - 3) * SR);
+    for (let c = 0; c < buf.numberOfChannels; c++) {
+      const d = buf.getChannelData(c);
+      for (let i = fadeStart; i < d.length; i++) d[i] *= Math.max(0, 1 - (i - fadeStart) / (3 * SR));
+    }
+
+    const wav = encodeWav(buf);
+    const blob = new Blob([wav], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    const regionName = region ? region.name.replace(/\s+/g, '-') : 'BeatForge';
+    const a = document.createElement('a'); a.href = url;
+    a.download = `BeatForge-${regionName}-${durationMins.toFixed(1)}min.wav`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setStatus('saved', `✅ ${durationMins.toFixed(1)}-min WAV downloaded!`);
+  } catch(err) {
+    setStatus('', '❌ Error: ' + err.message);
+    console.error(err);
   }
-
-  const buf = await offCtx.startRendering();
-
-  // Fade out last 4 seconds
-  const fs = Math.floor((TARGET - 4) * audioCtx.sampleRate);
-  const fe = Math.floor(TARGET * audioCtx.sampleRate);
-  for (let c = 0; c < buf.numberOfChannels; c++) {
-    const d = buf.getChannelData(c);
-    for (let i = fs; i < Math.min(fe, d.length); i++) d[i] *= 1 - (i - fs) / (fe - fs);
-  }
-
-  const wav = encodeWav(buf);
-  const blob = new Blob([wav], { type: 'audio/wav' });
-  const url = URL.createObjectURL(blob);
-  const regionName = region ? region.name.replace(/\s+/g, '-') : 'beat';
-  const a = document.createElement('a'); a.href = url;
-  a.download = `BeatForge-${regionName}-${durationMins.toFixed(1)}min.wav`;
-  a.click(); URL.revokeObjectURL(url);
-  setStatus('saved', `⬇️ ${durationMins.toFixed(1)}-minute "${region ? region.name : 'beat'}" WAV downloaded!`);
+  btn.textContent = '⬇️ WAV Export'; btn.disabled = false;
 });
+
+// Offline percussion player — rebuilds instrument directly into offline ctx
+function playOfflinePerc(track, t0, offCtx, masterNode) {
+  // Map track name to a simplified offline synth
+  const n = track.name;
+  try {
+    if (n==='Kick'||n==='808 Bass') {
+      const o=offCtx.createOscillator(),g=offCtx.createGain();
+      o.connect(g);g.connect(masterNode);
+      o.type='sine';
+      o.frequency.setValueAtTime(n==='808 Bass'?80:170,t0);
+      o.frequency.exponentialRampToValueAtTime(n==='808 Bass'?30:38,t0+(n==='808 Bass'?0.9:0.5));
+      g.gain.setValueAtTime(1.0,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+(n==='808 Bass'?1.0:0.5));
+      o.start(t0);o.stop(t0+(n==='808 Bass'?1.0:0.55));
+    } else if (n==='Snare') {
+      offNoise(offCtx,masterNode,0.2,0.6,4000,'highpass',t0);
+      const o=offCtx.createOscillator(),g=offCtx.createGain();o.connect(g);g.connect(masterNode);
+      o.type='triangle';o.frequency.setValueAtTime(220,t0);o.frequency.exponentialRampToValueAtTime(90,t0+0.14);
+      g.gain.setValueAtTime(0.5,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+0.2);o.start(t0);o.stop(t0+0.2);
+    } else if (n==='Hi-Hat') {
+      offNoise(offCtx,masterNode,0.06,0.28,9000,'highpass',t0);
+    } else if (n==='Open-Hat') {
+      offNoise(offCtx,masterNode,0.35,0.2,8000,'highpass',t0);
+    } else if (n==='Tabla-Na'||n==='Tabla-Ge') {
+      const f=n==='Tabla-Na'?420:105;
+      const o=offCtx.createOscillator(),g=offCtx.createGain();o.connect(g);g.connect(masterNode);
+      o.type='sine';o.frequency.setValueAtTime(f*1.4,t0);o.frequency.exponentialRampToValueAtTime(f*0.6,t0+0.18);
+      g.gain.setValueAtTime(0.8,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+0.28);o.start(t0);o.stop(t0+0.3);
+    } else if (n==='Dhol'||n==='Dhol-Hi') {
+      if(n==='Dhol'){const o=offCtx.createOscillator(),g=offCtx.createGain();o.connect(g);g.connect(masterNode);o.type='sine';o.frequency.setValueAtTime(90,t0);o.frequency.exponentialRampToValueAtTime(38,t0+0.3);g.gain.setValueAtTime(1.0,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+0.45);o.start(t0);o.stop(t0+0.45);}
+      else offNoise(offCtx,masterNode,0.1,0.4,3500,'highpass',t0);
+    } else if (n==='Dholak') {
+      const o=offCtx.createOscillator(),g=offCtx.createGain();o.connect(g);g.connect(masterNode);
+      o.type='sine';o.frequency.setValueAtTime(160,t0);o.frequency.exponentialRampToValueAtTime(70,t0+0.2);
+      g.gain.setValueAtTime(0.85,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+0.28);o.start(t0);o.stop(t0+0.3);
+    } else if (n.startsWith('Mridag')) {
+      const hi=n.endsWith('R');const f=hi?450:135;
+      const o=offCtx.createOscillator(),g=offCtx.createGain();o.connect(g);g.connect(masterNode);
+      o.type='sine';o.frequency.setValueAtTime(f,t0);o.frequency.exponentialRampToValueAtTime(f*0.6,t0+(hi?0.1:0.25));
+      g.gain.setValueAtTime(0.75,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+(hi?0.14:0.32));o.start(t0);o.stop(t0+(hi?0.15:0.35));
+    } else if (n.startsWith('Khol')) {
+      const hi=n.endsWith('Hi');const f=hi?310:115;
+      const o=offCtx.createOscillator(),g=offCtx.createGain();o.connect(g);g.connect(masterNode);
+      o.type='sine';o.frequency.setValueAtTime(f,t0);o.frequency.exponentialRampToValueAtTime(f*0.55,t0+(hi?0.1:0.28));
+      g.gain.setValueAtTime(0.75,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+(hi?0.14:0.38));o.start(t0);o.stop(t0+(hi?0.15:0.4));
+    } else if (n==='Djembe'||n==='Darabouka'||n==='Congas'||n==='Congas-Hi'||n==='Cajon'||n==='Taiko'||n==='Nagara'||n==='Kanjira'||n==='Tungi'||n==='Dumru') {
+      const fMap={Djembe:185,Darabouka:310,Congas:175,['Congas-Hi']:280,Cajon:85,Taiko:90,Nagara:75,Kanjira:490,Tungi:195,Dumru:220};
+      const dMap={Djembe:0.28,Darabouka:0.15,Congas:0.25,['Congas-Hi']:0.18,Cajon:0.42,Taiko:0.6,Nagara:0.65,Kanjira:0.1,Tungi:0.2,Dumru:0.1};
+      const f=fMap[n]||200,d=dMap[n]||0.2;
+      const o=offCtx.createOscillator(),g=offCtx.createGain();o.connect(g);g.connect(masterNode);
+      o.type='sine';o.frequency.setValueAtTime(f*1.4,t0);o.frequency.exponentialRampToValueAtTime(f*0.55,t0+d);
+      g.gain.setValueAtTime(0.85,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+d);o.start(t0);o.stop(t0+d+0.02);
+    } else {
+      // Generic tone for any other track
+      const o=offCtx.createOscillator(),g=offCtx.createGain();o.connect(g);g.connect(masterNode);
+      o.type='sine';o.frequency.value=261;
+      g.gain.setValueAtTime(0.4,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+0.3);o.start(t0);o.stop(t0+0.35);
+    }
+  } catch(e) {}
+}
+
+function playOfflineNote(name, freq, t0, offCtx, masterNode) {
+  try {
+    const melodyInstrs = ['Sitar','Bansuri','Veena','Shehnai','Harmonium','Esraj','Sarangi','Nadhasw.','Mahuri','Oud','Kora','Erhu','Koto','Accordion','Bagpipe','Pan Flute','Violin','Guitar','Piano','Trumpet','Marimba'];
+    if (!melodyInstrs.includes(name)) return;
+    // All melodic instruments: sawtooth/sine with harmonics
+    const isBowed = ['Sarangi','Esraj','Erhu','Violin'].includes(name);
+    const isWind = ['Bansuri','Shehnai','Nadhasw.','Mahuri','Pan Flute','Bagpipe'].includes(name);
+    const type = isBowed ? 'sawtooth' : isWind ? 'sine' : 'triangle';
+    const harmonics = isBowed ? [1,2,3] : isWind ? [1] : [1,2,3];
+    const amps = isBowed ? [0.35,0.18,0.08] : isWind ? [0.5] : [0.45,0.22,0.1];
+    const dur = isWind ? 0.55 : 0.7;
+    harmonics.forEach((h,i) => {
+      const o=offCtx.createOscillator(),g=offCtx.createGain();
+      o.connect(g);g.connect(masterNode);
+      o.type=type;o.frequency.value=freq*h;
+      g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(amps[i],t0+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+dur*(1-i*0.15));
+      o.start(t0);o.stop(t0+dur+0.05);
+    });
+  } catch(e) {}
+}
+
+function offNoise(offCtx, masterNode, dur, gain, freq, type, t0) {
+  try {
+    const sz=Math.ceil(offCtx.sampleRate*Math.max(dur,0.001));
+    const buf=offCtx.createBuffer(1,sz,offCtx.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<sz;i++)d[i]=Math.random()*2-1;
+    const src=offCtx.createBufferSource();src.buffer=buf;
+    const flt=offCtx.createBiquadFilter();flt.type=type;flt.frequency.value=freq;flt.Q.value=1.5;
+    const g=offCtx.createGain();
+    src.connect(flt);flt.connect(g);g.connect(masterNode);
+    g.gain.setValueAtTime(gain,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    src.start(t0);src.stop(t0+dur);
+  } catch(e) {}
+}
 
 function encodeWav(buf) {
   const nc=buf.numberOfChannels,sr=buf.sampleRate,len=buf.length*nc*2;
