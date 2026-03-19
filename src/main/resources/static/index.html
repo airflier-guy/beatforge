@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BeatForge — Eastern & Western Beat Studio</title>
+  <title>BeatForge — Regional Indian & World Beat Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -15,12 +15,13 @@
       <div class="logo"><span class="logo-icon">⬡</span><span class="logo-text">BeatForge</span></div>
       <div class="nav-links">
         <a href="#hero">Home</a>
-        <a href="#genre">Genres</a>
+        <a href="#regional-indian">Indian</a>
+        <a href="#regional-world">World</a>
         <a href="#sequencer">Studio</a>
         <a href="#gallery">Gallery</a>
       </div>
       <div class="nav-right">
-        <button class="dark-toggle" id="darkToggle" title="Toggle dark mode">🌙</button>
+        <button class="dark-toggle" id="darkToggle">🌙</button>
         <button class="nav-cta" onclick="document.getElementById('sequencer').scrollIntoView({behavior:'smooth'})">Open Studio</button>
       </div>
     </div>
@@ -29,176 +30,108 @@
   <!-- HERO -->
   <section id="hero" class="hero">
     <div class="hero-content">
-      <div class="hero-badge">Eastern · Western · 8 Genres · Moods · Realistic Sounds</div>
-      <h1 class="hero-title">Your Mood.<br>Your Genre.<br>Your Beat.</h1>
-      <p class="hero-sub">Pick how you feel, choose your genre, and BeatForge builds a beat that matches both — with 21 realistic instruments from across the world.</p>
+      <div class="hero-badge">28 Indian States · Global World Music · Melodic Sequences · Unlimited WAV</div>
+      <h1 class="hero-title">Every Beat.<br>Every Region.<br>Every Culture.</h1>
+      <p class="hero-sub">BeatForge covers all 28 Indian states with authentic instruments and melodic patterns, plus world music from Africa, Latin America, Middle East, East Asia and Europe — with unlimited duration WAV export.</p>
       <div class="hero-actions">
-        <button class="btn-primary" onclick="document.getElementById('genre').scrollIntoView({behavior:'smooth'})">Start Creating →</button>
-        <span class="hero-hint">21 instruments · 8 genres · Moods · Free</span>
+        <button class="btn-primary" onclick="document.getElementById('regional-indian').scrollIntoView({behavior:'smooth'})">🇮🇳 Indian Regions →</button>
+        <button class="btn-secondary" onclick="document.getElementById('regional-world').scrollIntoView({behavior:'smooth'})">🌍 World Music →</button>
       </div>
     </div>
     <div class="hero-visual">
-      <div class="world-pills">
-        <div class="world-pill west">
-          <div class="wp-label">🎸 Western</div>
-          <div class="wp-instruments">Rock · Jazz · Hip-Hop · EDM</div>
-          <div class="wp-moods">😡 😌 🤩 😊</div>
-        </div>
-        <div class="world-divider">+</div>
-        <div class="world-pill east">
-          <div class="wp-label">🪘 Eastern</div>
-          <div class="wp-instruments">Bollywood · Hindustani · Carnatic · Sufi</div>
-          <div class="wp-moods">🎉 🪔 😌 🌙</div>
-        </div>
+      <div class="hero-stats-grid">
+        <div class="hstat"><div class="hstat-num">28</div><div class="hstat-label">Indian States</div></div>
+        <div class="hstat"><div class="hstat-num">20+</div><div class="hstat-label">World Regions</div></div>
+        <div class="hstat"><div class="hstat-num">40+</div><div class="hstat-label">Instruments</div></div>
+        <div class="hstat"><div class="hstat-num">∞</div><div class="hstat-label">WAV Duration</div></div>
       </div>
     </div>
   </section>
 
   <!-- FEATURES -->
   <section class="features">
-    <div class="feature-item"><span class="feat-icon">🎭</span><span>Mood Filters</span></div>
+    <div class="feature-item"><span class="feat-icon">🇮🇳</span><span>28 States</span></div>
     <div class="feat-divider"></div>
-    <div class="feature-item"><span class="feat-icon">🎵</span><span>8 Genres</span></div>
+    <div class="feature-item"><span class="feat-icon">🌍</span><span>World Music</span></div>
     <div class="feat-divider"></div>
-    <div class="feature-item"><span class="feat-icon">🎚️</span><span>Per-Track Volume</span></div>
+    <div class="feature-item"><span class="feat-icon">🎵</span><span>Melodic Patterns</span></div>
+    <div class="feat-divider"></div>
+    <div class="feature-item"><span class="feat-icon">⬇️</span><span>Unlimited WAV</span></div>
     <div class="feat-divider"></div>
     <div class="feature-item"><span class="feat-icon">📊</span><span>Visualizer</span></div>
     <div class="feat-divider"></div>
-    <div class="feature-item"><span class="feat-icon">📖</span><span>Learn Mode</span></div>
-    <div class="feat-divider"></div>
-    <div class="feature-item"><span class="feat-icon">⬇️</span><span>WAV — Any Duration</span></div>
+    <div class="feature-item"><span class="feat-icon">🎚️</span><span>Per-Track Volume</span></div>
   </section>
 
-  <!-- GENRE SECTION -->
-  <section id="genre" class="genre-section">
+  <!-- REGIONAL INDIAN -->
+  <section id="regional-indian" class="regional-section">
     <div class="section-header">
-      <h2>Genre × Mood</h2>
-      <p>Filter by mood, then pick a genre. Each combination loads a unique beat.</p>
+      <h2>🇮🇳 Regional Indian Music</h2>
+      <p>All 28 Indian states — authentic instruments, traditional beats and melodic patterns.</p>
     </div>
 
-    <!-- Search Bar -->
+    <!-- Search -->
     <div class="search-bar-wrap">
       <span class="search-icon">🔍</span>
-      <input type="text" id="genreSearch" class="genre-search-input" placeholder="Search genre or mood... (e.g. Jazz, Calm, Tabla, Festive)" oninput="handleSearch(this.value)">
+      <input type="text" id="genreSearch" class="genre-search-input" placeholder="Search state, instrument or style... (e.g. Bengal, Tabla, Bhangra, Carnatic)" oninput="handleSearch(this.value)">
       <button class="search-clear" id="searchClear" onclick="clearSearch()" style="display:none">✕</button>
     </div>
     <div id="searchResults" class="search-results" style="display:none"></div>
 
-    <div class="mood-filter-bar">
-      <span class="mood-filter-label">Filter by mood:</span>
-      <div class="mood-filters">
-        <button class="mood-filter-btn active" data-mood="all" onclick="filterByMood('all',this)">🎵 All</button>
-        <button class="mood-filter-btn" data-mood="happy" onclick="filterByMood('happy',this)">😊 Happy</button>
-        <button class="mood-filter-btn" data-mood="sad" onclick="filterByMood('sad',this)">😢 Sad</button>
-        <button class="mood-filter-btn" data-mood="angry" onclick="filterByMood('angry',this)">😡 Angry</button>
-        <button class="mood-filter-btn" data-mood="calm" onclick="filterByMood('calm',this)">😌 Calm</button>
-        <button class="mood-filter-btn" data-mood="excited" onclick="filterByMood('excited',this)">🤩 Excited</button>
-        <button class="mood-filter-btn" data-mood="romantic" onclick="filterByMood('romantic',this)">❤️ Romantic</button>
-        <button class="mood-filter-btn" data-mood="melancholic" onclick="filterByMood('melancholic',this)">🌧️ Melancholic</button>
-        <button class="mood-filter-btn" data-mood="festive" onclick="filterByMood('festive',this)">🎉 Festive</button>
-      </div>
+    <!-- Indian State Groups -->
+    <div class="region-group-tabs">
+      <button class="rgt-btn active" onclick="showIndianGroup('north',this)">North India</button>
+      <button class="rgt-btn" onclick="showIndianGroup('east',this)">East India</button>
+      <button class="rgt-btn" onclick="showIndianGroup('south',this)">South India</button>
+      <button class="rgt-btn" onclick="showIndianGroup('west',this)">West India</button>
+      <button class="rgt-btn" onclick="showIndianGroup('central',this)">Central India</button>
+      <button class="rgt-btn" onclick="showIndianGroup('northeast',this)">North-East</button>
     </div>
 
-    <div class="genre-tabs">
-      <button class="genre-tab active" onclick="switchWorld('western',this)">🎸 Western</button>
-      <button class="genre-tab" onclick="switchWorld('eastern',this)">🪘 Eastern</button>
-    </div>
-
-    <div id="westernGenres" class="genre-grid">
-      <div class="genre-card" data-genre="rock" data-moods="angry,excited" onclick="openGenreMoodPicker('rock')">
-        <div class="genre-card-top"><div class="genre-icon">🤘</div><div class="genre-mood-tags"><span class="gmt angry">😡 Angry</span><span class="gmt excited">🤩 Excited</span></div></div>
-        <div class="genre-name">Rock</div>
-        <div class="genre-desc">Heavy drums, distorted guitar, powerful bass</div>
-        <div class="genre-meta"><span class="gmeta-bpm">140 BPM</span><span class="gmeta-key">Guitar · Kick · Snare</span></div>
-        <button class="genre-select-btn">Pick Mood & Load →</button>
-      </div>
-      <div class="genre-card" data-genre="jazz" data-moods="calm,romantic,melancholic" onclick="openGenreMoodPicker('jazz')">
-        <div class="genre-card-top"><div class="genre-icon">🎷</div><div class="genre-mood-tags"><span class="gmt calm">😌 Calm</span><span class="gmt romantic">❤️ Romantic</span><span class="gmt melancholic">🌧️ Melancholic</span></div></div>
-        <div class="genre-name">Jazz</div>
-        <div class="genre-desc">Swinging rhythms, trumpet melody, brushed snare</div>
-        <div class="genre-meta"><span class="gmeta-bpm">100 BPM</span><span class="gmeta-key">Trumpet · Piano · Bass</span></div>
-        <button class="genre-select-btn">Pick Mood & Load →</button>
-      </div>
-      <div class="genre-card" data-genre="hiphop" data-moods="angry,happy,excited" onclick="openGenreMoodPicker('hiphop')">
-        <div class="genre-card-top"><div class="genre-icon">🎤</div><div class="genre-mood-tags"><span class="gmt angry">😡 Angry</span><span class="gmt happy">😊 Happy</span><span class="gmt excited">🤩 Excited</span></div></div>
-        <div class="genre-name">Hip-Hop</div>
-        <div class="genre-desc">Booming 808, crisp snare, sampled hi-hats</div>
-        <div class="genre-meta"><span class="gmeta-bpm">90 BPM</span><span class="gmeta-key">808 Bass · Snare · Hi-Hat</span></div>
-        <button class="genre-select-btn">Pick Mood & Load →</button>
-      </div>
-      <div class="genre-card" data-genre="edm" data-moods="happy,excited,festive" onclick="openGenreMoodPicker('edm')">
-        <div class="genre-card-top"><div class="genre-icon">🎛️</div><div class="genre-mood-tags"><span class="gmt happy">😊 Happy</span><span class="gmt excited">🤩 Excited</span><span class="gmt festive">🎉 Festive</span></div></div>
-        <div class="genre-name">Electronic / EDM</div>
-        <div class="genre-desc">Four-on-the-floor kick, synth lead, arpeggios</div>
-        <div class="genre-meta"><span class="gmeta-bpm">128 BPM</span><span class="gmeta-key">Synth · Kick · Strings</span></div>
-        <button class="genre-select-btn">Pick Mood & Load →</button>
-      </div>
-    </div>
-
-    <div id="easternGenres" class="genre-grid" style="display:none">
-      <div class="genre-card east" data-genre="bollywood" data-moods="happy,festive,romantic" onclick="openGenreMoodPicker('bollywood')">
-        <div class="genre-card-top"><div class="genre-icon">🎬</div><div class="genre-mood-tags"><span class="gmt happy">😊 Happy</span><span class="gmt festive">🎉 Festive</span><span class="gmt romantic">❤️ Romantic</span></div></div>
-        <div class="genre-name">Bollywood</div>
-        <div class="genre-desc">Filmi beats, Tabla groove, Sitar melody</div>
-        <div class="genre-meta"><span class="gmeta-bpm">110 BPM</span><span class="gmeta-key">Tabla · Sitar · Dholak</span></div>
-        <button class="genre-select-btn">Pick Mood & Load →</button>
-      </div>
-      <div class="genre-card east" data-genre="hindustani" data-moods="calm,melancholic,romantic" onclick="openGenreMoodPicker('hindustani')">
-        <div class="genre-card-top"><div class="genre-icon">🪔</div><div class="genre-mood-tags"><span class="gmt calm">😌 Calm</span><span class="gmt melancholic">🌧️ Melancholic</span><span class="gmt romantic">❤️ Romantic</span></div></div>
-        <div class="genre-name">Hindustani Classical</div>
-        <div class="genre-desc">Raga-inspired, slow Tabla taal, Tanpura drone</div>
-        <div class="genre-meta"><span class="gmeta-bpm">60 BPM</span><span class="gmeta-key">Tabla · Tanpura · Sitar</span></div>
-        <button class="genre-select-btn">Pick Mood & Load →</button>
-      </div>
-      <div class="genre-card east" data-genre="carnatic" data-moods="excited,happy,festive" onclick="openGenreMoodPicker('carnatic')">
-        <div class="genre-card-top"><div class="genre-icon">🌺</div><div class="genre-mood-tags"><span class="gmt excited">🤩 Excited</span><span class="gmt happy">😊 Happy</span><span class="gmt festive">🎉 Festive</span></div></div>
-        <div class="genre-name">Carnatic</div>
-        <div class="genre-desc">South Indian Mridangam, fast Bansuri phrases</div>
-        <div class="genre-meta"><span class="gmeta-bpm">120 BPM</span><span class="gmeta-key">Mridangam · Bansuri · Sarangi</span></div>
-        <button class="genre-select-btn">Pick Mood & Load →</button>
-      </div>
-      <div class="genre-card east" data-genre="sufi" data-moods="sad,calm,melancholic" onclick="openGenreMoodPicker('sufi')">
-        <div class="genre-card-top"><div class="genre-icon">🌙</div><div class="genre-mood-tags"><span class="gmt sad">😢 Sad</span><span class="gmt calm">😌 Calm</span><span class="gmt melancholic">🌧️ Melancholic</span></div></div>
-        <div class="genre-name">Sufi / Folk</div>
-        <div class="genre-desc">Meditative Dhol, soulful Sarangi, Bansuri call</div>
-        <div class="genre-meta"><span class="gmeta-bpm">75 BPM</span><span class="gmeta-key">Dhol · Sarangi · Bansuri</span></div>
-        <button class="genre-select-btn">Pick Mood & Load →</button>
-      </div>
-    </div>
-
-    <div id="genreBanner" class="genre-banner" style="display:none">
-      <span id="genreBannerIcon" style="font-size:2rem"></span>
-      <div style="flex:1"><div id="genreBannerName" style="font-weight:700;font-size:15px"></div><div id="genreBannerDesc" style="font-size:12px;opacity:0.8;margin-top:2px"></div></div>
-      <button class="genre-banner-btn" onclick="document.getElementById('sequencer').scrollIntoView({behavior:'smooth'})">Open in Studio →</button>
-    </div>
+    <div id="indianGrid" class="regional-grid"></div>
   </section>
 
-  <!-- ARRANGEMENT MODAL -->
-  <div id="arrangementModal" class="modal-overlay" style="display:none" onclick="closeArrangementModal(event)">
-    <div class="modal-box" style="max-width:800px">
+  <!-- REGIONAL WORLD -->
+  <section id="regional-world" class="regional-section">
+    <div class="section-header">
+      <h2>🌍 Regional World Music</h2>
+      <p>Iconic music traditions from across the globe — authentic melodic patterns and instruments.</p>
+    </div>
+
+    <div class="region-group-tabs">
+      <button class="rgt-btn active" onclick="showWorldGroup('africa',this)">Africa</button>
+      <button class="rgt-btn" onclick="showWorldGroup('latin',this)">Latin America</button>
+      <button class="rgt-btn" onclick="showWorldGroup('middleeast',this)">Middle East</button>
+      <button class="rgt-btn" onclick="showWorldGroup('eastasia',this)">East Asia</button>
+      <button class="rgt-btn" onclick="showWorldGroup('europe',this)">Europe</button>
+      <button class="rgt-btn" onclick="showWorldGroup('americas',this)">Americas</button>
+    </div>
+
+    <div id="worldGrid" class="regional-grid"></div>
+  </section>
+
+  <!-- REGION DETAIL MODAL -->
+  <div id="regionModal" class="modal-overlay" style="display:none" onclick="closeRegionModal(event)">
+    <div class="modal-box region-modal-box">
       <div class="modal-header">
-        <div style="font-size:2rem">🌏</div>
-        <div><div style="font-family:var(--display);font-size:1.3rem;font-weight:800">Regional Styles — 3-Min Output</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">Pick a style to generate a full 3-minute structured WAV with Intro→Build→Drop→Outro</div></div>
-        <button class="modal-close" onclick="document.getElementById('arrangementModal').style.display='none'">✕</button>
+        <div id="modalRegionIcon" style="font-size:2.5rem"></div>
+        <div>
+          <div id="modalRegionName" style="font-family:var(--display);font-size:1.4rem;font-weight:800"></div>
+          <div id="modalRegionSub" style="font-size:12px;color:var(--text-muted);margin-top:2px"></div>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('regionModal').style.display='none'">✕</button>
       </div>
-      <div id="arrangementGrid" class="arrangement-grid"></div>
+      <div id="modalRegionDesc" class="modal-region-desc"></div>
+      <div class="modal-instruments-row">
+        <span class="modal-instr-label">Instruments:</span>
+        <div id="modalInstruments" class="modal-instr-tags"></div>
+      </div>
+      <p class="modal-subtitle" style="margin-top:16px">Choose a variation:</p>
+      <div id="modalVariations" class="modal-mood-grid"></div>
     </div>
   </div>
 
-  <!-- MOOD MODAL -->
-  <div id="moodModal" class="modal-overlay" style="display:none" onclick="closeMoodModal(event)">
-    <div class="modal-box">
-      <div class="modal-header">
-        <div id="modalGenreIcon" style="font-size:2rem"></div>
-        <div><div id="modalGenreName" style="font-family:var(--display);font-size:1.3rem;font-weight:800"></div><div id="modalGenreDesc" style="font-size:12px;color:var(--text-muted);margin-top:2px"></div></div>
-        <button class="modal-close" onclick="document.getElementById('moodModal').style.display='none'">✕</button>
-      </div>
-      <p class="modal-subtitle">Choose a mood to shape the beat:</p>
-      <div id="modalMoodOptions" class="modal-mood-grid"></div>
-    </div>
-  </div>
-
-  <!-- INSTRUMENT INFO TOOLTIP -->
+  <!-- INSTRUMENT TOOLTIP -->
   <div id="instrTooltip" class="instr-tooltip" style="display:none">
     <div class="tt-name" id="ttName"></div>
     <div class="tt-origin" id="ttOrigin"></div>
@@ -217,7 +150,7 @@
       </div>
     </div>
 
-    <!-- VISUALIZER -->
+    <!-- Visualizer -->
     <div class="visualizer-wrap">
       <canvas id="visualizer" class="visualizer"></canvas>
       <div class="viz-label" id="vizLabel">▶ Press play to see visualizer</div>
@@ -229,8 +162,7 @@
         <div class="transport-left">
           <button class="transport-btn play" id="playBtn">▶ Play</button>
           <button class="transport-btn stop" id="stopBtn">⏹ Stop</button>
-          <button class="transport-btn learn" id="learnBtn" title="Learn this beat step by step">📖 Learn</button>
-          <button class="transport-btn regional" onclick="openArrangementPicker()" title="3-min regional output">🌏 Regional Styles</button>
+          <button class="transport-btn learn" id="learnBtn">📖 Learn</button>
         </div>
         <div class="transport-center">
           <div class="bpm-control">
@@ -241,26 +173,35 @@
           </div>
         </div>
         <div class="transport-right">
-          <button class="transport-btn download" id="downloadBtn">⬇️ WAV (Choose Duration)</button>
+          <button class="transport-btn download" id="downloadBtn">⬇️ WAV Export</button>
           <button class="transport-btn clear" id="clearBtn">✕ Clear</button>
         </div>
       </div>
 
-      <!-- Learn Mode Panel -->
+      <!-- WAV Duration Picker (always visible) -->
+      <div class="wav-duration-bar">
+        <span class="wav-dur-label">🕐 Output Duration:</span>
+        <button class="wav-dur-btn" onclick="setDuration(2)">2 min</button>
+        <button class="wav-dur-btn" onclick="setDuration(3)">3 min</button>
+        <button class="wav-dur-btn" onclick="setDuration(5)">5 min</button>
+        <button class="wav-dur-btn" onclick="setDuration(10)">10 min</button>
+        <input type="number" id="wavDuration" value="3" min="2" step="0.5" class="wav-dur-input" title="Custom duration in minutes">
+        <span class="wav-dur-unit">min</span>
+        <span class="wav-dur-note">(no upper limit)</span>
+      </div>
+
+      <!-- Learn Panel -->
       <div id="learnPanel" class="learn-panel" style="display:none">
         <div class="learn-header">
           <span class="learn-icon">📖</span>
-          <div>
-            <div class="learn-title" id="learnTitle">Learn This Beat</div>
-            <div class="learn-subtitle" id="learnSubtitle"></div>
-          </div>
+          <div><div class="learn-title" id="learnTitle">Learn This Beat</div><div class="learn-subtitle" id="learnSubtitle"></div></div>
           <button class="learn-close" onclick="exitLearnMode()">✕ Exit</button>
         </div>
         <div class="learn-steps" id="learnSteps"></div>
         <div class="learn-nav">
-          <button class="learn-nav-btn" id="learnPrev" onclick="learnPrev()">← Prev</button>
+          <button class="learn-nav-btn" onclick="learnPrev()">← Prev</button>
           <span id="learnProgress"></span>
-          <button class="learn-nav-btn" id="learnNext" onclick="learnNext()">Next →</button>
+          <button class="learn-nav-btn" onclick="learnNext()">Next →</button>
         </div>
         <div class="learn-tip" id="learnTip"></div>
       </div>
@@ -284,19 +225,16 @@
         <div class="vol-spacer"></div>
       </div>
 
-      <!-- Grid -->
       <div id="grid"></div>
 
-      <!-- Save Bar -->
       <div class="save-bar">
         <input type="text" id="patternName" placeholder="Name your pattern..." class="pattern-name-input">
         <button class="transport-btn save" id="saveBtn">💾 Save</button>
       </div>
 
-      <!-- Status -->
       <div class="status-bar">
         <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Ready — filter by mood, then pick a genre!</span>
+        <span id="statusText">Ready — pick a region to load an authentic beat!</span>
       </div>
     </div>
   </section>
@@ -305,31 +243,15 @@
   <section id="gallery" class="gallery-section">
     <div class="section-header">
       <h2>Your Beat Gallery</h2>
-      <p>All your saved beats. Load, like, share or delete anytime.</p>
+      <p>All your saved beats with region tags.</p>
     </div>
     <div id="galleryGrid" class="gallery-grid"></div>
-  </section>
-
-  <!-- ABOUT -->
-  <section id="about" class="about-section">
-    <div class="about-inner">
-      <div class="about-text">
-        <h2>What is BeatForge?</h2>
-        <p>BeatForge is a free browser beat studio with 21 realistic instruments, 8 genres, mood-based beat variations, per-track volume control, a real-time visualizer, and a learn mode for beginners.</p>
-        <p>Pick your genre, choose your mood, download your beat and share it — no signup needed.</p>
-      </div>
-      <div class="about-stats">
-        <div class="stat"><div class="stat-num">21</div><div class="stat-label">Instruments</div></div>
-        <div class="stat"><div class="stat-num">8</div><div class="stat-label">Genres</div></div>
-        <div class="stat"><div class="stat-num">24</div><div class="stat-label">Mood Beats</div></div>
-      </div>
-    </div>
   </section>
 
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-logo"><span class="logo-icon">⬡</span> BeatForge</div>
-      <p class="footer-tagline">Your mood. Your genre. Your beat.</p>
+      <p class="footer-tagline">Every beat. Every region. Every culture.</p>
       <p class="footer-copy">© 2026 BeatForge. Free forever.</p>
     </div>
   </footer>
