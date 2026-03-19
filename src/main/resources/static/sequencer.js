@@ -17,24 +17,9 @@ const reverb = makeReverb(1.8, 3.5);
 const reverbGain = audioCtx.createGain(); reverbGain.gain.value = 0.15;
 reverb.connect(reverbGain); reverbGain.connect(masterGain);
 
-// Offline master gain nodes (created fresh per render)
-let offMaster = null, offReverb = null, offReverbGain = null;
-
 function dest(ac, wet) {
-  if (!ac) return wet ? reverb : masterGain;
-  // For OfflineAudioContext, route through offMaster
-  if (!offMaster || offMaster.context !== ac) {
-    offMaster = ac.createGain(); offMaster.gain.value = 0.82;
-    offMaster.connect(ac.destination);
-    // Build reverb for offline ctx
-    const len = ac.sampleRate * 1.8;
-    const rbuf = ac.createBuffer(2, len, ac.sampleRate);
-    for (let c=0;c<2;c++){const d=rbuf.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.5);}
-    offReverb = ac.createConvolver(); offReverb.buffer = rbuf;
-    offReverbGain = ac.createGain(); offReverbGain.gain.value = 0.15;
-    offReverb.connect(offReverbGain); offReverbGain.connect(offMaster);
-  }
-  return wet ? offReverb : offMaster;
+  if (ac) return ac.destination;
+  return wet ? reverb : masterGain;
 }
 
 // ── NOISE GENERATOR ──
@@ -1107,7 +1092,6 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
   const totalLoops = Math.ceil(TARGET / loopDur);
   const totalDur = TARGET + 3;
   const offCtx = new OfflineAudioContext(2, Math.ceil(audioCtx.sampleRate * totalDur), audioCtx.sampleRate);
-  offMaster = null; // force rebuild of gain chain for this context
 
   const regions = currentRegionType === 'indian' ? INDIAN_REGIONS : currentRegionType === 'world' ? WORLD_REGIONS : null;
   const region = regions && currentRegionKey ? regions[currentRegionKey] : null;
